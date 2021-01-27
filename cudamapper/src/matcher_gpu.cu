@@ -310,6 +310,7 @@ void generate_anchors(
             target_index.smallest_read_id(),
             target_index.number_of_reads(),
             target_index.number_of_basepairs_in_longest_read());
+        GW_CU_CHECK_ERR(cudaPeekAtLastError());
     }
 
     {
@@ -342,6 +343,7 @@ void find_query_target_matches(
                                                                               get_size(query_representations_d),
                                                                               target_representations_d.data(),
                                                                               get_size(target_representations_d));
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 void compute_anchor_starting_indices(

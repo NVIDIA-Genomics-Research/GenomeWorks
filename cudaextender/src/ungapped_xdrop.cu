@@ -15,9 +15,11 @@
 */
 /*
 * This algorithm was adapted from SegAlign's Ungapped Extender authored by
-* Sneha Goenka (gsneha@stanford.edu) and Yatish Turakhia (yturakhi@uscs.edu).
+* Sneha Goenka (gsneha@stanford.edu) and Yatish Turakhia (yturakhi@ucsc.edu).
 * Source code for original implementation and use in SegAlign can be found
 * here: https://github.com/gsneha26/SegAlign
+* Description of the algorithm and original implementation can be found in the SegAlign 
+* paper published in SC20 (https://doi.ieeecomputersociety.org/10.1109/SC41405.2020.00043)
 */
 #include "ungapped_xdrop.cuh"
 #include "ungapped_xdrop_kernels.cuh"
@@ -27,8 +29,8 @@
 
 #include <thrust/system/cuda/execution_policy.h>
 #include <thrust/sort.h>
+#include <thrust/unique.h>
 
-#include <cub/device/device_select.cuh>
 #include <cub/device/device_scan.cuh>
 
 namespace claraparabricks
@@ -72,22 +74,13 @@ UngappedXDrop::UngappedXDrop(const int32_t* h_score_mat, const int32_t score_mat
     batch_max_ungapped_extensions_    = static_cast<int32_t>(global_mem_gb) * max_ungapped_per_gb;
 
     //Figure out memory requirements for cub functions
-    size_t temp_storage_bytes = 0;
-    size_t cub_storage_bytes  = 0;
-    GW_CU_CHECK_ERR(cub::DeviceSelect::Unique(nullptr,
-                                              temp_storage_bytes,
-                                              d_tmp_ssp_.data(),
-                                              d_tmp_ssp_.data(),
-                                              (int32_t*)nullptr,
-                                              batch_max_ungapped_extensions_,
-                                              stream_));
+    size_t cub_storage_bytes = 0;
     GW_CU_CHECK_ERR(cub::DeviceScan::InclusiveSum(nullptr,
                                                   cub_storage_bytes,
                                                   d_done_.data(),
                                                   d_done_.data(),
                                                   batch_max_ungapped_extensions_,
                                                   stream_));
-    cub_storage_bytes = std::max(temp_storage_bytes, cub_storage_bytes);
 
     // Allocate space on device for scoring matrix and intermediate results
     d_score_mat_        = device_buffer<int32_t>(score_mat_dim_, allocator_, stream_);
@@ -136,6 +129,7 @@ StatusType UngappedXDrop::extend_async(const int8_t* d_query, const int32_t quer
                                                                    seed_pair_start,
                                                                    d_scored_segment_pairs,
                                                                    d_done_.data());
+        GW_CU_CHECK_ERR(cudaPeekAtLastError());
         size_t cub_storage_bytes = d_temp_storage_cub_.size();
         GW_CU_CHECK_ERR(cub::DeviceScan::InclusiveSum(d_temp_storage_cub_.data(),
                                                       cub_storage_bytes,
@@ -157,18 +151,22 @@ StatusType UngappedXDrop::extend_async(const int8_t* d_query, const int32_t quer
                                                         d_scored_segment_pairs,
                                                         d_tmp_ssp_.data(),
                                                         curr_num_pairs);
+            GW_CU_CHECK_ERR(cudaPeekAtLastError());
             thrust::stable_sort(thrust::cuda::par(allocator_).on(stream_),
                                 d_tmp_ssp_.begin(),
                                 d_tmp_ssp_.begin() + num_scored_segment_pairs,
                                 scored_segment_pair_comp());
-            GW_CU_CHECK_ERR(cub::DeviceSelect::Unique(d_temp_storage_cub_.data(),
-                                                      cub_storage_bytes,
-                                                      d_tmp_ssp_.data(),
-                                                      d_scored_segment_pairs + total_scored_segment_pairs_,
-                                                      d_num_scored_segment_pairs,
-                                                      num_scored_segment_pairs,
-                                                      stream_))
-            total_scored_segment_pairs_ += get_value_from_device(d_num_scored_segment_pairs, stream_);
+
+            ScoredSegmentPair* result_end =
+                thrust::unique_copy(thrust::cuda::par(allocator_).on(stream_),
+                                    d_tmp_ssp_.begin(),
+                                    d_tmp_ssp_.begin() + num_scored_segment_pairs,
+                                    d_scored_segment_pairs + total_scored_segment_pairs_,
+                                    scored_segment_pair_diagonal_overlap());
+
+            total_scored_segment_pairs_ += thrust::distance(
+                d_scored_segment_pairs + total_scored_segment_pairs_,
+                result_end);
         }
     }
 

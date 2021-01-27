@@ -15,9 +15,11 @@
 */
 /*
 * This algorithm was adapted from SegAlign's Ungapped Extender authored by
-* Sneha Goenka (gsneha@stanford.edu) and Yatish Turakhia (yturakhi@uscs.edu).
+* Sneha Goenka (gsneha@stanford.edu) and Yatish Turakhia (yturakhi@ucsc.edu).
 * Source code for original implementation and use in SegAlign can be found
 * here: https://github.com/gsneha26/SegAlign
+* Description of the algorithm and original implementation can be found in the SegAlign 
+* paper published in SC20 (https://doi.ieeecomputersociety.org/10.1109/SC41405.2020.00043)
 */
 #include "ungapped_xdrop_kernels.cuh"
 
@@ -52,8 +54,9 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
     // TODO - Following variables are an artifact of the hardcoded encoding scheme with a fixed
     // scoring matrix and a fixed alphabet. Will be replaced with cudasequence API.
     // Github Issue: https://github.com/clara-parabricks/GenomeWorks/issues/574
-    constexpr int32_t nuc  = 8;
-    constexpr int32_t nuc2 = 64;
+    constexpr int32_t nuc         = 8;
+    constexpr int32_t nuc2        = 64;
+    constexpr int32_t nuc_entropy = 4;
 
     constexpr int32_t num_warps = 4;
     constexpr int32_t warp_size = 32;
@@ -86,9 +89,9 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
 
     for (int32_t hid0 = blockIdx.x * num_warps; hid0 < num_seed_pairs; hid0 += num_warps * gridDim.x)
     {
-        short count[4]     = {0};
-        short count_del[4] = {0};
-        const int32_t hid  = hid0 + warp_id + start_index;
+        short count[nuc_entropy]     = {0};
+        short count_del[nuc_entropy] = {0};
+        const int32_t hid            = hid0 + warp_id + start_index;
         if (lane_id == 0)
         {
             if (hid < num_seed_pairs)
@@ -108,8 +111,8 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
             new_max_found[warp_id]  = false;
             entropy[warp_id]        = 1.0f;
             prev_score[warp_id]     = 0;
-            prev_max_score[warp_id] = -1000;
-            prev_max_pos[warp_id]   = 0;
+            prev_max_score[warp_id] = 0;
+            prev_max_pos[warp_id]   = -1;
             extent[warp_id]         = 0;
         }
         __syncwarp();
@@ -135,11 +138,11 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
 #pragma unroll
             for (int32_t offset = 1; offset < warp_size; offset = offset << 1)
             {
-                const int32_t temp = __shfl_up_sync(0xFFFFFFFF, thread_score, offset);
+                const int32_t temp_score = __shfl_up_sync(0xFFFFFFFF, thread_score, offset);
 
                 if (lane_id >= offset)
                 {
-                    thread_score += temp;
+                    thread_score += temp_score;
                 }
             }
 
@@ -164,14 +167,14 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
 #pragma unroll
             for (int32_t offset = 1; offset < warp_size; offset = offset << 1)
             {
-                const int32_t temp     = __shfl_up_sync(0xFFFFFFFF, max_thread_score, offset);
-                const int32_t temp_pos = __shfl_up_sync(0xFFFFFFFF, max_pos, offset);
+                const int32_t temp_score = __shfl_up_sync(0xFFFFFFFF, max_thread_score, offset);
+                const int32_t temp_pos   = __shfl_up_sync(0xFFFFFFFF, max_pos, offset);
 
                 if (lane_id >= offset)
                 {
-                    if (temp >= max_thread_score)
+                    if (temp_score >= max_thread_score)
                     {
-                        max_thread_score = temp;
+                        max_thread_score = temp_score;
                         max_pos          = temp_pos;
                     }
                 }
@@ -183,8 +186,36 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
 #pragma unroll
             for (int32_t offset = 1; offset < warp_size; offset = offset << 1)
             {
-                xdrop_done |= __shfl_up_sync(0xFFFFFFFF, xdrop_done, offset);
+                bool temp_xdrop_done = __shfl_up_sync(0xFFFFFFFF, xdrop_done, offset);
+                if (lane_id >= offset)
+                {
+                    xdrop_done |= temp_xdrop_done;
+                }
             }
+
+            if (xdrop_done)
+            {
+                max_thread_score = prev_max_score[warp_id];
+                max_pos          = prev_max_pos[warp_id];
+            }
+            __syncwarp();
+
+#pragma unroll
+            for (int32_t offset = 1; offset < warp_size; offset = offset << 1)
+            {
+                const int32_t temp_score = __shfl_up_sync(0xFFFFFFFF, max_thread_score, offset);
+                const int32_t temp_pos   = __shfl_up_sync(0xFFFFFFFF, max_pos, offset);
+
+                if (lane_id >= offset)
+                {
+                    if (temp_score >= max_thread_score)
+                    {
+                        max_thread_score = temp_score;
+                        max_pos          = temp_pos;
+                    }
+                }
+            }
+            __syncwarp();
 
             if (lane_id == warp_size - 1)
             {
@@ -216,7 +247,7 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
             if (new_max_found[warp_id])
             {
 #pragma unroll
-                for (int32_t i = 0; i < 4; i++)
+                for (int32_t i = 0; i < nuc_entropy; i++)
                 {
                     count[i]     = count[i] + count_del[i];
                     count_del[i] = 0;
@@ -224,7 +255,7 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
             }
             __syncwarp();
 
-            if (r_chr == q_chr)
+            if (r_chr == q_chr && r_chr < nuc_entropy)
             {
                 if (pos_offset <= prev_max_pos[warp_id])
                 {
@@ -250,15 +281,16 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
             edge_found[warp_id]     = false;
             new_max_found[warp_id]  = false;
             prev_score[warp_id]     = 0;
-            prev_max_score[warp_id] = -1000;
+            prev_max_score[warp_id] = 0;
             prev_max_pos[warp_id]   = 0;
             left_extent[warp_id]    = 0;
         }
 
-        count_del[0] = 0;
-        count_del[1] = 0;
-        count_del[2] = 0;
-        count_del[3] = 0;
+#pragma unroll
+        for (int32_t i = 0; i < nuc_entropy; i++)
+        {
+            count_del[i] = 0;
+        }
         __syncwarp();
 
         while (!xdrop_found[warp_id] && !edge_found[warp_id])
@@ -280,11 +312,11 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
 #pragma unroll
             for (int32_t offset = 1; offset < warp_size; offset = offset << 1)
             {
-                const int32_t temp = __shfl_up_sync(0xFFFFFFFF, thread_score, offset);
+                const int32_t temp_score = __shfl_up_sync(0xFFFFFFFF, thread_score, offset);
 
                 if (lane_id >= offset)
                 {
-                    thread_score += temp;
+                    thread_score += temp_score;
                 }
             }
 
@@ -308,14 +340,14 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
 #pragma unroll
             for (int32_t offset = 1; offset < warp_size; offset = offset << 1)
             {
-                const int32_t temp     = __shfl_up_sync(0xFFFFFFFF, max_thread_score, offset);
-                const int32_t temp_pos = __shfl_up_sync(0xFFFFFFFF, max_pos, offset);
+                const int32_t temp_score = __shfl_up_sync(0xFFFFFFFF, max_thread_score, offset);
+                const int32_t temp_pos   = __shfl_up_sync(0xFFFFFFFF, max_pos, offset);
 
                 if (lane_id >= offset)
                 {
-                    if (temp >= max_thread_score)
+                    if (temp_score >= max_thread_score)
                     {
-                        max_thread_score = temp;
+                        max_thread_score = temp_score;
                         max_pos          = temp_pos;
                     }
                 }
@@ -327,8 +359,36 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
 #pragma unroll
             for (int32_t offset = 1; offset < warp_size; offset = offset << 1)
             {
-                xdrop_done |= __shfl_up_sync(0xFFFFFFFF, xdrop_done, offset);
+                bool temp_xdrop_done = __shfl_up_sync(0xFFFFFFFF, xdrop_done, offset);
+                if (lane_id >= offset)
+                {
+                    xdrop_done |= temp_xdrop_done;
+                }
             }
+
+            if (xdrop_done)
+            {
+                max_thread_score = prev_max_score[warp_id];
+                max_pos          = prev_max_pos[warp_id];
+            }
+            __syncwarp();
+
+#pragma unroll
+            for (int32_t offset = 1; offset < warp_size; offset = offset << 1)
+            {
+                const int32_t temp_score = __shfl_up_sync(0xFFFFFFFF, max_thread_score, offset);
+                const int32_t temp_pos   = __shfl_up_sync(0xFFFFFFFF, max_pos, offset);
+
+                if (lane_id >= offset)
+                {
+                    if (temp_score >= max_thread_score)
+                    {
+                        max_thread_score = temp_score;
+                        max_pos          = temp_pos;
+                    }
+                }
+            }
+            __syncwarp();
 
             if (lane_id == warp_size - 1)
             {
@@ -362,7 +422,7 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
             if (new_max_found[warp_id])
             {
 #pragma unroll
-                for (int32_t i = 0; i < 4; i++)
+                for (int32_t i = 0; i < nuc_entropy; i++)
                 {
                     count[i]     = count[i] + count_del[i];
                     count_del[i] = 0;
@@ -370,7 +430,7 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
             }
             __syncwarp();
 
-            if (r_chr == q_chr)
+            if (r_chr == q_chr && r_chr < nuc_entropy)
             {
                 if (pos_offset <= prev_max_pos[warp_id])
                 {
@@ -388,7 +448,7 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
 
         if (total_score[warp_id] >= score_threshold && total_score[warp_id] <= 3 * score_threshold && !no_entropy)
         {
-            for (int32_t i = 0; i < 4; i++)
+            for (int32_t i = 0; i < nuc_entropy; i++)
             {
 #pragma unroll
                 for (int32_t offset = 1; offset < warp_size; offset = offset << 1)
@@ -402,7 +462,7 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
             {
                 double entropy_ln = 0.f;
 #pragma unroll
-                for (int32_t i = 0; i < 4; i++)
+                for (int32_t i = 0; i < nuc_entropy; i++)
                 {
                     if (count[i] != 0)
                     {
@@ -423,20 +483,20 @@ __global__ void find_high_scoring_segment_pairs(const int8_t* __restrict__ d_tar
             {
                 if (static_cast<int32_t>(static_cast<double>(total_score[warp_id]) * entropy[warp_id]) >= score_threshold)
                 {
-                    d_scored_segment_pairs[hid].seed_pair.target_position_in_read = ref_loc[warp_id] - left_extent[warp_id];
-                    d_scored_segment_pairs[hid].seed_pair.query_position_in_read  = query_loc[warp_id] - left_extent[warp_id];
-                    d_scored_segment_pairs[hid].length                            = extent[warp_id];
+                    d_scored_segment_pairs[hid].start_coord.target_position_in_read = ref_loc[warp_id] - left_extent[warp_id];
+                    d_scored_segment_pairs[hid].start_coord.query_position_in_read  = query_loc[warp_id] - left_extent[warp_id];
+                    d_scored_segment_pairs[hid].length                              = extent[warp_id];
                     if (entropy[warp_id] > 0)
                         d_scored_segment_pairs[hid].score = total_score[warp_id] * entropy[warp_id];
                     d_done[hid - start_index] = 1;
                 }
                 else
                 {
-                    d_scored_segment_pairs[hid].seed_pair.target_position_in_read = ref_loc[warp_id];
-                    d_scored_segment_pairs[hid].seed_pair.query_position_in_read  = query_loc[warp_id];
-                    d_scored_segment_pairs[hid].length                            = 0;
-                    d_scored_segment_pairs[hid].score                             = 0;
-                    d_done[hid - start_index]                                     = 0;
+                    d_scored_segment_pairs[hid].start_coord.target_position_in_read = ref_loc[warp_id];
+                    d_scored_segment_pairs[hid].start_coord.query_position_in_read  = query_loc[warp_id];
+                    d_scored_segment_pairs[hid].length                              = 0;
+                    d_scored_segment_pairs[hid].score                               = 0;
+                    d_done[hid - start_index]                                       = 0;
                 }
             }
         }

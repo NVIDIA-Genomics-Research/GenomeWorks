@@ -15,9 +15,11 @@
 */
 /*
 * This algorithm was adapted from SegAlign's Ungapped Extender authored by
-* Sneha Goenka (gsneha@stanford.edu) and Yatish Turakhia (yturakhi@uscs.edu).
+* Sneha Goenka (gsneha@stanford.edu) and Yatish Turakhia (yturakhi@ucsc.edu).
 * Source code for original implementation and use in SegAlign can be found
 * here: https://github.com/gsneha26/SegAlign
+* Description of the algorithm and original implementation can be found in the SegAlign 
+* paper published in SC20 (https://doi.ieeecomputersociety.org/10.1109/SC41405.2020.00043)
 */
 #pragma once
 
@@ -59,36 +61,75 @@ __global__ void compress_output(const int32_t* d_done,
                                 ScoredSegmentPair* d_tmp_ssp,
                                 int num_hits);
 
-// Binary predicate for sorting the ScoredSegmentPairs
+// Binary predicate for determining if the ScoredSegmentPairs overlap (and lie on the same diagonal)
+struct scored_segment_pair_diagonal_overlap
+{
+    __host__ __device__ bool operator()(const ScoredSegmentPair& x, const ScoredSegmentPair& y)
+    {
+        return ((
+                    (x.start_coord.target_position_in_read - x.start_coord.query_position_in_read) == (y.start_coord.target_position_in_read - y.start_coord.query_position_in_read))
+
+                &&
+
+                ((
+                     (x.start_coord.target_position_in_read >= y.start_coord.target_position_in_read) &&
+                     ((x.start_coord.target_position_in_read + x.length) <= (y.start_coord.target_position_in_read + y.length)))
+
+                 ||
+
+                 ((y.start_coord.target_position_in_read >= x.start_coord.target_position_in_read) &&
+                  ((y.start_coord.target_position_in_read + y.length) <= (x.start_coord.target_position_in_read + x.length)))));
+    }
+};
+
 struct scored_segment_pair_comp
 {
     __host__ __device__ bool operator()(const ScoredSegmentPair& x, const ScoredSegmentPair& y)
     {
-        if (x.seed_pair.query_position_in_read < y.seed_pair.query_position_in_read)
-            return true;
-        else if (x.seed_pair.query_position_in_read == y.seed_pair.query_position_in_read)
+        position_in_read_t diag_x = x.start_coord.target_position_in_read - x.start_coord.query_position_in_read;
+        position_in_read_t diag_y = y.start_coord.target_position_in_read - y.start_coord.query_position_in_read;
+
+        if (diag_x < diag_y)
         {
-            if (x.length > y.length)
-                return true;
-            else if (x.length == y.length)
+            return true;
+        }
+        else if (diag_x == diag_y)
+        {
+            if (x.start_coord.target_position_in_read < y.start_coord.target_position_in_read)
             {
-                if (x.seed_pair.target_position_in_read < y.seed_pair.target_position_in_read)
+                return true;
+            }
+            else if (x.start_coord.target_position_in_read == y.start_coord.target_position_in_read)
+            {
+                if (x.length > y.length)
+                {
                     return true;
-                else if (x.seed_pair.target_position_in_read == y.seed_pair.target_position_in_read)
+                }
+                else if (x.length == y.length)
                 {
                     if (x.score > y.score)
+                    {
                         return true;
+                    }
                     else
+                    {
                         return false;
+                    }
                 }
                 else
+                {
                     return false;
+                }
             }
             else
+            {
                 return false;
+            }
         }
         else
+        {
             return false;
+        }
     }
 };
 

@@ -88,9 +88,9 @@ inline void parse_scored_segment_pairs(const std::string& filepath, std::vector<
         while (std::getline(scored_segment_pairs_file, line, ','))
         {
             ScoredSegmentPair scored_segment_pair;
-            scored_segment_pair.seed_pair.target_position_in_read = std::atoi(line.c_str());
+            scored_segment_pair.start_coord.target_position_in_read = std::atoi(line.c_str());
             std::getline(scored_segment_pairs_file, line, ',');
-            scored_segment_pair.seed_pair.query_position_in_read = std::atoi(line.c_str());
+            scored_segment_pair.start_coord.query_position_in_read = std::atoi(line.c_str());
             std::getline(scored_segment_pairs_file, line, ',');
             scored_segment_pair.length = std::atoi(line.c_str());
             std::getline(scored_segment_pairs_file, line);

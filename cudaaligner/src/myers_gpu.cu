@@ -909,6 +909,7 @@ int32_t myers_compute_edit_distance(std::string const& target, std::string const
     cudautils::device_copy_n_async(lengths.data(), 2, sequence_lengths_d.data(), stream.get());
 
     myers::myers_compute_score_matrix_kernel<<<1, warp_size, 0, stream.get()>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d.data(), sequence_lengths_d.data(), max_sequence_length, 1);
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
     matrix<int32_t> score_host = score.get_matrix(0, n_words, get_size(target) + 1, stream.get());
     return score_host(n_words - 1, get_size(target));
@@ -953,12 +954,14 @@ matrix<int32_t> myers_get_full_score_matrix(std::string const& target, std::stri
     cudautils::device_copy_n_async(lengths.data(), 2, sequence_lengths_d.data(), stream.get());
 
     myers::myers_compute_score_matrix_kernel<<<1, warp_size, 0, stream.get()>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d.data(), sequence_lengths_d.data(), max_sequence_length, 1);
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
     {
         dim3 n_threads = {32, 4, 1};
         dim3 n_blocks  = {1, 1, 1};
         n_blocks.x     = ceiling_divide<int32_t>(get_size<int32_t>(query) + 1, n_threads.x);
         n_blocks.y     = ceiling_divide<int32_t>(get_size<int32_t>(target) + 1, n_threads.y);
         myers::myers_convert_to_full_score_matrix_kernel<<<n_blocks, n_threads, 0, stream.get()>>>(fullscore.get_device_interface(), pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), sequence_lengths_d.data(), 0);
+        GW_CU_CHECK_ERR(cudaPeekAtLastError());
     }
 
     matrix<int32_t> fullscore_host = fullscore.get_matrix(0, get_size(query) + 1, get_size(target) + 1, stream.get());
@@ -986,6 +989,7 @@ void myers_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length
         const dim3 blocks(ceiling_divide<int32_t>(n_alignments, threads.x), 1, 1);
         myers::myers_backtrace_kernel<<<blocks, threads, 0, stream>>>(paths_d, path_lengths_d, max_path_length, pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), sequence_lengths_d, n_alignments);
     }
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 void myers_banded_gpu(int8_t* paths_d, int32_t* path_lengths_d, int64_t const* path_starts_d,
@@ -1004,6 +1008,7 @@ void myers_banded_gpu(int8_t* paths_d, int32_t* path_lengths_d, int64_t const* p
     myers::myers_banded_kernel<<<blocks, threads, 0, stream>>>(paths_d, path_lengths_d, path_starts_d,
                                                                pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(),
                                                                sequences_d, sequence_starts_d, max_bandwidth, n_alignments);
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 } // namespace cudaaligner
