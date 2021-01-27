@@ -539,6 +539,7 @@ void filter_out_most_common_representations(DefaultDeviceAllocator allocator,
                                                                                                                     unique_representation_index_after_filtering_d.data(),
                                                                                                                     unique_representations_after_compression_d.data(),
                                                                                                                     first_occurrence_of_representations_after_compression_d.data());
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
     // *** remove filtered out elements (compress) from other data arrays ***
 
@@ -573,6 +574,7 @@ void filter_out_most_common_representations(DefaultDeviceAllocator allocator,
                                                                                                          read_ids_after_compression_d.data(),
                                                                                                          positions_in_reads_after_compression_d.data(),
                                                                                                          directions_of_representations_after_compression_d.data());
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
     // *** swap vectors with the input arrays ***
     swap(unique_representations_d, unique_representations_after_compression_d);
@@ -944,6 +946,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
                                                                                               positions_in_reads_d_.data(),
                                                                                               directions_of_reads_d_.data(),
                                                                                               representations_d_.size());
+        GW_CU_CHECK_ERR(cudaPeekAtLastError());
     }
 
     // now generate the index elements

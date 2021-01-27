@@ -948,6 +948,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
                                                                                                                  read_id_to_windows_section_d.data(),
                                                                                                                  read_id_to_minimizers_written_d.data(),
                                                                                                                  hash_representations);
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
     // *** central minimizers ***
     const std::uint32_t basepairs_per_thread    = 8;  // arbitrary, tradeoff between the number of thread blocks that can be scheduled simultaneously and the number of basepairs which have to be loaded multiple times beacuse only basepairs_per_thread*num_of_threads-(window_size_ + minimizer_size_ - 1) + 1 can be processed at once, i.e. window_size+minimizer_size-2 basepairs have to be loaded again
@@ -982,6 +983,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
                                                                                                                read_id_to_windows_section_d.data(),
                                                                                                                read_id_to_minimizers_written_d.data(),
                                                                                                                hash_representations);
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
     // *** back end minimizers ***
     num_of_threads = 64;
@@ -1009,6 +1011,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
                                                                                                                 read_id_to_windows_section_d.data(),
                                                                                                                 read_id_to_minimizers_written_d.data(),
                                                                                                                 hash_representations);
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
     // *** remove unused elemets from the window minimizers arrays ***
     // In window_minimizers_representation_d and other arrays enough space was allocated to support cases in which each window has a different minimizer. In reality many neighboring windows share the same minimizer
@@ -1039,6 +1042,7 @@ Minimizer::GeneratedSketchElements Minimizer::generate_sketch_elements(DefaultDe
                                                                          rest_compressed_d.data(),
                                                                          read_id_to_minimizers_written_d.data(),
                                                                          read_id_of_first_read);
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
     // free these arrays as they are not needed anymore
     window_minimizers_representation_d.free();

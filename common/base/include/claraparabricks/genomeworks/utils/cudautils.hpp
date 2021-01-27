@@ -83,10 +83,24 @@ inline void gpu_assert(cudaError_t code, const char* file, int line)
 
     if (code != cudaSuccess)
     {
-        std::string err = "GPU Error:: " +
-                          std::string(cudaGetErrorString(code)) +
-                          " " + std::string(file) +
-                          " " + std::to_string(line);
+        std::string err = "GPU Error:: " + std::string(cudaGetErrorString(code));
+        if (code == cudaErrorNoKernelImageForDevice)
+        {
+            err += " -- Is the code compiled for the correct GPU architecture?";
+            int32_t device;
+            cudaDeviceProp prop;
+            if (cudaGetDevice(&device) == cudaSuccess)
+            {
+                if (cudaGetDeviceProperties(&prop, device) == cudaSuccess)
+                {
+                    err += " Device has compute capability ";
+                    err += std::to_string(prop.major);
+                    err += std::to_string(prop.minor);
+                    err += ".";
+                }
+            }
+        }
+        err += " " + std::string(file) + " " + std::to_string(line);
         GW_LOG_ERROR(err.c_str());
         // In Debug mode, this assert will cause a debugger trap
         // which is beneficial when debugging errors.
