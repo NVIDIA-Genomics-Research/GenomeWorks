@@ -351,9 +351,8 @@ __global__ void myers_compute_score_matrix_kernel(
     GW_CONSTEXPR int32_t warp_size = 32;
     assert(warpSize == warp_size);
     assert(threadIdx.x < warp_size);
-    assert(blockIdx.x == 0);
 
-    const int32_t alignment_idx = blockIdx.y * blockDim.y + threadIdx.y;
+    const int32_t alignment_idx = blockIdx.x;
     if (alignment_idx >= n_alignments)
         return;
     const int32_t query_size        = sequence_lengths_d[2 * alignment_idx];
@@ -689,7 +688,6 @@ myers_compute_scores_edit_dist_banded(
     // Note: 0-th row of the NW matrix is implicit for pv, mv and score! (given by the inital warp_carry)
     assert(warpSize == warp_size);
     assert(threadIdx.x < warp_size);
-    assert(blockIdx.x == 0);
 
     assert(target_size > 0);
     assert(query_size > 0);
@@ -781,10 +779,9 @@ __global__ void myers_banded_kernel(
 {
     assert(warpSize == warp_size);
     assert(threadIdx.x < warp_size);
-    assert(blockIdx.x == 0);
     assert(max_bandwidth % word_size != 1); // we need at least two bits in the last word
 
-    const int32_t alignment_idx = blockIdx.y * blockDim.y + threadIdx.y;
+    const int32_t alignment_idx = blockIdx.x;
     if (alignment_idx >= n_alignments)
         return;
     const char* const query   = sequences_d + sequence_starts_d[2 * alignment_idx];
@@ -981,7 +978,7 @@ void myers_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length
 {
     {
         const dim3 threads(warp_size, 1, 1);
-        const dim3 blocks(1, ceiling_divide<int32_t>(n_alignments, threads.y), 1);
+        const dim3 blocks(n_alignments, 1, 1);
         myers::myers_compute_score_matrix_kernel<<<blocks, threads, 0, stream>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d, sequence_lengths_d, max_sequence_length, n_alignments);
     }
     {
@@ -1004,7 +1001,7 @@ void myers_banded_gpu(int8_t* paths_d, int32_t* path_lengths_d, int64_t const* p
                       cudaStream_t stream)
 {
     const dim3 threads(warp_size, 1, 1);
-    const dim3 blocks(1, ceiling_divide<int32_t>(n_alignments, threads.y), 1);
+    const dim3 blocks(n_alignments, 1, 1);
     myers::myers_banded_kernel<<<blocks, threads, 0, stream>>>(paths_d, path_lengths_d, path_starts_d,
                                                                pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(),
                                                                sequences_d, sequence_starts_d, max_bandwidth, n_alignments);
