@@ -166,6 +166,7 @@ AlignerGlobalMyersBanded::~AlignerGlobalMyersBanded()
 
 StatusType AlignerGlobalMyersBanded::add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length, bool reverse_complement_query, bool reverse_complement_target)
 {
+    GW_NVTX_RANGE(profiler, "AlignerGlobalMyersBanded::add_alignment");
     throw_on_negative(query_length, "query_length should not be negative");
     throw_on_negative(target_length, "target_length should not be negative");
     if (query == nullptr || target == nullptr)
@@ -248,6 +249,7 @@ StatusType AlignerGlobalMyersBanded::add_alignment(const char* query, int32_t qu
 
 StatusType AlignerGlobalMyersBanded::align_all()
 {
+    GW_NVTX_RANGE(profiler, "AlignerGlobalMyersBanded::align_all");
     using cudautils::device_copy_n_async;
     const auto n_alignments = get_size(alignments_);
     if (n_alignments == 0)
@@ -316,9 +318,11 @@ StatusType AlignerGlobalMyersBanded::align_all()
 
 StatusType AlignerGlobalMyersBanded::sync_alignments()
 {
+    GW_NVTX_RANGE(profiler, "AlignerGlobalMyersBanded::sync");
     scoped_device_switch dev(device_id_);
     GW_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
 
+    GW_NVTX_RANGE(profiler_post, "AlignerGlobalMyersBanded::post-sync");
     const int32_t n_alignments = get_size<int32_t>(alignments_);
     std::vector<AlignmentState> al_state;
     for (int32_t i = 0; i < n_alignments; ++i)
