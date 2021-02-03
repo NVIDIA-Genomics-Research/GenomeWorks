@@ -52,7 +52,7 @@ target_include_directories(${MODULE_NAME}_internal INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(${MODULE_NAME} gwbase cub)
+target_link_libraries(${MODULE_NAME} gwbase gwio cub)
 
 target_compile_options(${MODULE_NAME} PRIVATE -Werror -Wall -Wextra)
 if (gw_optimize_for_native_cpu)

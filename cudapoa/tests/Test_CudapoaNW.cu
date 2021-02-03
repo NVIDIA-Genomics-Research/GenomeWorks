@@ -322,7 +322,7 @@ NWAnswer testNWbanded(const BasicNW& obj, bool adaptive, bool traceback = false)
     int16_t* alignment_read       = nullptr;
     int16_t* aligned_nodes        = nullptr; //local; to store num of nodes aligned (length of alignment_graph and alignment_read)
     BandMode band_mode            = traceback ? (adaptive ? BandMode::adaptive_band_traceback : BandMode::static_band_traceback)
-                                   : (adaptive ? BandMode::adaptive_band : BandMode::static_band);
+                                              : (adaptive ? BandMode::adaptive_band : BandMode::static_band);
     BatchConfig batch_size(1024 /*max_sequence_size*/, 2 /*max_sequences_per_poa*/,
                            128 /*= band_width*/, band_mode);
 

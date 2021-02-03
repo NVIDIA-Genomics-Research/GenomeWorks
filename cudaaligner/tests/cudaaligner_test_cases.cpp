@@ -16,8 +16,11 @@
 
 #include "cudaaligner_test_cases.hpp"
 #include "cudaaligner_file_location.hpp"
+#include <claraparabricks/genomeworks/types.hpp>
 
 #include <random>
+#include <memory>
+#include <claraparabricks/genomeworks/io/fasta_parser.hpp>
 #include <claraparabricks/genomeworks/utils/genomeutils.hpp>
 
 namespace
@@ -37,9 +40,21 @@ claraparabricks::genomeworks::TestCaseData generate_random_test_case(std::minstd
     return t;
 }
 
-int load_test_case(const std::string& target, const std::string& query)
+std::vector<claraparabricks::genomeworks::TestCaseData> load_test_case(const std::string& target, const std::string& query)
 {
-    return 0;
+    std::vector<claraparabricks::genomeworks::TestCaseData> tests;
+
+    std::unique_ptr<claraparabricks::genomeworks::io::FastaParser> target_parser = claraparabricks::genomeworks::io::create_kseq_fasta_parser(target);
+    std::unique_ptr<claraparabricks::genomeworks::io::FastaParser> query_parser  = claraparabricks::genomeworks::io::create_kseq_fasta_parser(query);
+
+    assert(target_parser->get_num_seqences() == query_parser->get_num_seqences());
+
+    for (claraparabricks::genomeworks::read_id_t read = 0; read < target_parser->get_num_seqences(); read++)
+    {
+        tests.push_back({.target = target_parser->get_sequence_by_id(read).seq, .query = query_parser->get_sequence_by_id(read).seq});
+    }
+
+    return tests;
 }
 } // namespace
 
@@ -50,14 +65,9 @@ namespace genomeworks
 {
 std::vector<TestCaseData> create_cudaaligner_test_cases()
 {
-    std::vector<TestCaseData> tests;
-
-    int tt = load_test_case(
+    std::vector<TestCaseData> tests = load_test_case(
         std::string(CUDAALIGNER_BENCHMARK_DATA_DIR) + "/target_reads.fasta",
-        std::string(CUDAALIGNER_BENCHMARK_DATA_DIR) + "/query_reads.fasta"
-    );
-
-    // tests.push_back(t);
+        std::string(CUDAALIGNER_BENCHMARK_DATA_DIR) + "/query_reads.fasta");
 
     std::minstd_rand rng(random_seed);
     for (int32_t i = 0; i < n_random_testcases; ++i)
