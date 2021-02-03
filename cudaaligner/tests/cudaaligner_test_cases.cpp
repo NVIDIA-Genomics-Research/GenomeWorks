@@ -15,6 +15,7 @@
 */
 
 #include "cudaaligner_test_cases.hpp"
+#include "cudaaligner_file_location.hpp"
 
 #include <random>
 #include <claraparabricks/genomeworks/utils/genomeutils.hpp>
@@ -53,7 +54,7 @@ std::vector<TestCaseData> create_cudaaligner_test_cases()
 
     int tt = load_test_case(
         std::string(CUDAALIGNER_BENCHMARK_DATA_DIR) + "/target_reads.fasta",
-        std::string(CUDAALIGNER_BENCHMARK_DATA_DIR) + "/query_reads.fasta",
+        std::string(CUDAALIGNER_BENCHMARK_DATA_DIR) + "/query_reads.fasta"
     );
 
     // tests.push_back(t);
