@@ -18,12 +18,17 @@
 #include "../src/aligner_global_myers.hpp"
 #include "../src/aligner_global_myers_banded.hpp"
 #include "../src/aligner_global_hirschberg_myers.hpp"
+#include "cudaaligner_file_location.hpp"
 
 #include <claraparabricks/genomeworks/cudaaligner/alignment.hpp>
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 #include <claraparabricks/genomeworks/utils/genomeutils.hpp>
+#include <claraparabricks/genomeworks/types.hpp>
+#include <claraparabricks/genomeworks/io/fasta_parser.hpp>
 
 #include <random>
+#include <map>
+#include <fstream>
 #include "gtest/gtest.h"
 
 namespace claraparabricks
@@ -73,59 +78,34 @@ struct AlignerTestData
 std::vector<AlignerTestData> create_aligner_test_cases()
 {
     std::vector<AlignerTestData> test_cases;
+    std::map<std::string, AlignerTestData> map_test_case;
+
+    std::unique_ptr<claraparabricks::genomeworks::io::FastaParser> target_parser = claraparabricks::genomeworks::io::create_kseq_fasta_parser(std::string(CUDAALIGNER_BENCHMARK_DATA_DIR) + "/target_AlignerGlobal.fasta", 0, false);
+    std::unique_ptr<claraparabricks::genomeworks::io::FastaParser> query_parser  = claraparabricks::genomeworks::io::create_kseq_fasta_parser(std::string(CUDAALIGNER_BENCHMARK_DATA_DIR) + "/query_AlignerGlobal.fasta", 0, false);
+
+    assert(target_parser->get_num_seqences() == query_parser->get_num_seqences());
+    for (claraparabricks::genomeworks::read_id_t read = 0; read < target_parser->get_num_seqences(); read++)
+    {
+        assert(target_parser->get_sequence_by_id(read).name == query_parser->get_sequence_by_id(read).name);
+        map_test_case[target_parser->get_sequence_by_id(read).name].inputs.push_back({target_parser->get_sequence_by_id(read).seq, query_parser->get_sequence_by_id(read).seq});
+        map_test_case[target_parser->get_sequence_by_id(read).name].algorithm = AlignmentAlgorithm::Default;
+    }
+
+    std::ifstream cigar_dist_file(std::string(CUDAALIGNER_BENCHMARK_DATA_DIR) + "/result_AlignerGlobal.fasta");
+    std::string test_case_id, cigar;
+    int edit_dist;
+    while (cigar_dist_file >> test_case_id >> cigar >> edit_dist)
+    {
+        map_test_case[test_case_id].cigars.push_back(cigar);
+        map_test_case[test_case_id].edit_dist.push_back(edit_dist);
+    }
+
+    for (const auto& test_case : map_test_case)
+    {
+        test_cases.push_back(test_case.second);
+    }
+
     AlignerTestData data;
-
-    // Test case 1
-    data.inputs    = {{"AAAA", "TTAT"}};
-    data.cigars    = {"4M"};
-    data.edit_dist = {3};
-    data.algorithm = AlignmentAlgorithm::Default;
-    test_cases.push_back(data);
-
-    // Test case 2
-    data.inputs    = {{"ATAAAAAAAA", "AAAAAAAAA"}};
-    data.cigars    = {"1M1D8M"};
-    data.edit_dist = {1};
-    data.algorithm = AlignmentAlgorithm::Default;
-    test_cases.push_back(data);
-
-    // Test case 3
-    data.inputs    = {{"AAAAAAAAA", "ATAAAAAAAA"}};
-    data.cigars    = {"1M1I8M"};
-    data.edit_dist = {1};
-    data.algorithm = AlignmentAlgorithm::Default;
-    test_cases.push_back(data);
-
-    // Test case 4
-    data.inputs    = {{"ACTGA", "GCTAG"}};
-    data.cigars    = {"3M1D1M1I"};
-    data.edit_dist = {3};
-    data.algorithm = AlignmentAlgorithm::Default;
-    test_cases.push_back(data);
-
-    // Test case 5
-    data.inputs    = {{"ACTGA", "GCTAG"}, {"ACTG", "ACTG"}, {"A", "T"}};
-    data.cigars    = {"3M1D1M1I", "4M", "1M"};
-    data.edit_dist = {3, 0, 1};
-    data.algorithm = AlignmentAlgorithm::Default;
-    test_cases.push_back(data);
-
-    // Test case 6
-    data.inputs = {
-        {"AAAA", "TTAT"}, {"ATAAAAAAAA", "AAAAAAAAA"}, {"AAAAAAAAA", "ATAAAAAAAA"}, {"ACTGA", "GCTAG"}, {"ACTGA", "GCTAG"}, {"ACTG", "ACTG"}, {"A", "T"}, {"AAAA", "TTAT"}, {"ATAAAAAAAA", "AAAAAAAAA"}, {"AAAAAAAAA", "ATAAAAAAAA"}, {"ACTGA", "GCTAG"}, {"ACTGA", "GCTAG"}, {"ACTG", "ACTG"}, {"A", "T"}, {"AAAA", "TTAT"}, {"ATAAAAAAAA", "AAAAAAAAA"}, {"AAAAAAAAA", "ATAAAAAAAA"}, {"ACTGA", "GCTAG"}, {"ACTGA", "GCTAG"}, {"ACTG", "ACTG"}, {"A", "T"}, {"AAAA", "TTAT"}, {"ATAAAAAAAA", "AAAAAAAAA"}, {"AAAAAAAAA", "ATAAAAAAAA"}, {"ACTGA", "GCTAG"}, {"ACTGA", "GCTAG"}, {"ACTG", "ACTG"}, {"A", "T"}};
-    data.cigars = {
-        "4M", "1M1D8M", "1M1I8M", "3M1D1M1I", "3M1D1M1I", "4M", "1M",
-        "4M", "1M1D8M", "1M1I8M", "3M1D1M1I", "3M1D1M1I", "4M", "1M",
-        "4M", "1M1D8M", "1M1I8M", "3M1D1M1I", "3M1D1M1I", "4M", "1M",
-        "4M", "1M1D8M", "1M1I8M", "3M1D1M1I", "3M1D1M1I", "4M", "1M"};
-    data.edit_dist = {
-        3, 1, 1, 3, 3, 0, 1,
-        3, 1, 1, 3, 3, 0, 1,
-        3, 1, 1, 3, 3, 0, 1,
-        3, 1, 1, 3, 3, 0, 1};
-    data.algorithm = AlignmentAlgorithm::Default;
-    test_cases.push_back(data);
-
     std::minstd_rand rng(1);
     data.inputs    = {{genomeworks::genomeutils::generate_random_genome(4800, rng), genomeworks::genomeutils::generate_random_genome(5000, rng)}};
     data.cigars    = {}; // do not test cigars

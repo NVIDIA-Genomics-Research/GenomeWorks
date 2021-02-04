@@ -18,14 +18,17 @@
 #include "../src/ukkonen_cpu.hpp"
 #include "../src/ukkonen_gpu.cuh"
 #include "../src/batched_device_matrices.cuh"
+#include "cudaaligner_file_location.hpp"
 
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 #include <claraparabricks/genomeworks/utils/genomeutils.hpp>
 #include <claraparabricks/genomeworks/utils/device_buffer.hpp>
+#include <claraparabricks/genomeworks/io/fasta_parser.hpp>
 
 #include <cuda_runtime_api.h>
 #include <random>
 #include <algorithm>
+#include <fstream>
 #include "gtest/gtest.h"
 
 namespace claraparabricks
@@ -52,43 +55,23 @@ std::vector<TestAlignmentPair> getTestCases()
     std::vector<TestAlignmentPair> test_cases;
     TestAlignmentPair t;
 
-    // Test 1
-    t.target = "ACTG";
-    t.query  = "ACTG";
-    t.p      = 0;
-    test_cases.push_back(t);
+    std::unique_ptr<claraparabricks::genomeworks::io::FastaParser> target_parser = claraparabricks::genomeworks::io::create_kseq_fasta_parser(std::string(CUDAALIGNER_BENCHMARK_DATA_DIR) + "/target_NeedlemanWunschImplementation.fasta", 0, false);
+    std::unique_ptr<claraparabricks::genomeworks::io::FastaParser> query_parser  = claraparabricks::genomeworks::io::create_kseq_fasta_parser(std::string(CUDAALIGNER_BENCHMARK_DATA_DIR) + "/query_NeedlemanWunschImplementation.fasta", 0, false);
 
-    // Test 2
-    t.target = "ACTG";
-    t.query  = "ATCG";
-    t.p      = 3;
-    test_cases.push_back(t);
+    std::ifstream p_file(std::string(CUDAALIGNER_BENCHMARK_DATA_DIR) + "/result_NeedlemanWunschImplementation.txt");
+    std::string test_case;
+    int32_t p;
 
-    // Test 3
-    t.target = "ACTG";
-    t.query  = "ATG";
-    t.p      = 2;
-    test_cases.push_back(t);
+    assert(target_parser->get_num_seqences() == query_parser->get_num_seqences());
+    claraparabricks::genomeworks::read_id_t read = 0;
+    while (p_file >> test_case >> p)
+    {
+        assert(target_parser->get_sequence_by_id(read).name == test_case);
+        assert(query_parser->get_sequence_by_id(read).name == test_case);
+        test_cases.push_back({.target = target_parser->get_sequence_by_id(read).seq, .query = query_parser->get_sequence_by_id(read).seq, .p = p});
+    }
 
-    // Test 4
-    t.target = "ACTG";
-    t.query  = "";
-    t.p      = 0;
-    test_cases.push_back(t);
-
-    // Test 5
-    t.target = "ACTGGTCA";
-    t.query  = "ACTG";
-    t.p      = 4;
-    test_cases.push_back(t);
-
-    // Test 6
-    t.target = "ACTG";
-    t.query  = "BDEF";
-    t.p      = 4;
-    test_cases.push_back(t);
-
-    // Test 7
+    // Randomly-generated test cases
     std::minstd_rand rng(1);
     t.target = genomeworks::genomeutils::generate_random_genome(5000, rng);
     t.query  = genomeworks::genomeutils::generate_random_genome(4800, rng);
