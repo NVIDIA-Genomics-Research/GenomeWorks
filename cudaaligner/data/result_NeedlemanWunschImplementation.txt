@@ -1,0 +1,6 @@
+test_case_1 0
+test_case_2 3
+test_case_3 2
+test_case_4 0
+test_case_5 4
+test_case_6 4
