@@ -19,6 +19,7 @@
 #include "matrix_cpu.hpp"
 #include "batched_device_matrices.cuh"
 
+#include <cuda/atomic>
 #include <cuda_runtime_api.h>
 
 namespace claraparabricks
@@ -53,6 +54,8 @@ void myers_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length
 void myers_banded_gpu(int8_t* paths_d, int32_t* path_lengths_d, int64_t const* path_starts_d,
                       char const* sequences_d,
                       int64_t const* sequence_starts_d,
+                      int32_t const* scheduling_index_d,
+                      cuda::atomic<int32_t, cuda::thread_scope_device>* scheduling_atomic_d,
                       int32_t n_alignments,
                       int32_t max_bandwidth,
                       batched_device_matrices<myers::WordType>& pv,
