@@ -79,7 +79,7 @@ StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length,
 {
     if (query_length < 0 || target_length < 0)
     {
-        GW_LOG_DEBUG("{} {}", "Negative target or query length is not allowed.");
+        GW_LOG_DEBUG("Negative target or query length is not allowed.");
         return StatusType::generic_error;
     }
 
@@ -87,19 +87,22 @@ StatusType AlignerGlobal::add_alignment(const char* query, int32_t query_length,
     int32_t const num_alignments       = get_size(alignments_);
     if (num_alignments >= max_alignments_)
     {
-        GW_LOG_DEBUG("{} {}", "Exceeded maximum number of alignments allowed : ", max_alignments_);
+        std::string msg = "Exceeded maximum number of alignments allowed : " + std::to_string(max_alignments_);
+        GW_LOG_DEBUG(msg.c_str());
         return StatusType::exceeded_max_alignments;
     }
 
     if (query_length > max_query_length_)
     {
-        GW_LOG_DEBUG("{} {}", "Exceeded maximum length of query allowed : ", max_query_length_);
+        std::string msg = "Exceeded maximum length of query allowed : " + std::to_string(max_query_length_);
+        GW_LOG_DEBUG(msg.c_str());
         return StatusType::exceeded_max_length;
     }
 
     if (target_length > max_target_length_)
     {
-        GW_LOG_DEBUG("{} {}", "Exceeded maximum length of target allowed : ", max_target_length_);
+        std::string msg = "Exceeded maximum length of target allowed : " + std::to_string(max_target_length_);
+        GW_LOG_DEBUG(msg.c_str());
         return StatusType::exceeded_max_length;
     }
 
@@ -146,16 +149,8 @@ StatusType AlignerGlobal::align_all()
     scoped_device_switch dev(device_id_);
     const int32_t max_alignment_length = std::max(max_query_length_, max_target_length_);
     const int32_t max_result_length    = calc_max_result_length(max_query_length_, max_target_length_);
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d_.data(),
-                                    sequence_lengths_h_.data(),
-                                    2 * sizeof(int32_t) * num_alignments,
-                                    cudaMemcpyHostToDevice,
-                                    stream_));
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d_.data(),
-                                    sequences_h_.data(),
-                                    2 * sizeof(char) * max_alignment_length * num_alignments,
-                                    cudaMemcpyHostToDevice,
-                                    stream_));
+    cudautils::device_copy_n_async(sequence_lengths_h_.data(), 2 * num_alignments, sequence_lengths_d_.data(), stream_);
+    cudautils::device_copy_n_async(sequences_h_.data(), 2 * max_alignment_length * num_alignments, sequences_d_.data(), stream_);
 
     // Run kernel
     run_alignment(results_d_.data(), result_lengths_d_.data(),
@@ -164,16 +159,8 @@ StatusType AlignerGlobal::align_all()
                   num_alignments,
                   stream_);
 
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(results_h_.data(),
-                                    results_d_.data(),
-                                    sizeof(int8_t) * max_result_length * num_alignments,
-                                    cudaMemcpyDeviceToHost,
-                                    stream_));
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(result_lengths_h_.data(),
-                                    result_lengths_d_.data(),
-                                    sizeof(int32_t) * num_alignments,
-                                    cudaMemcpyDeviceToHost,
-                                    stream_));
+    cudautils::device_copy_n_async(results_d_.data(), max_result_length * num_alignments, results_h_.data(), stream_);
+    cudautils::device_copy_n_async(result_lengths_d_.data(), num_alignments, result_lengths_h_.data(), stream_);
     return StatusType::success;
 }
 

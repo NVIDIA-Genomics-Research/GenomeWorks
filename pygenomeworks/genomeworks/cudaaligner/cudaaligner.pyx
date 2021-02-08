@@ -22,7 +22,6 @@
 
 """Bindings for CUDAALIGNER."""
 
-import genomeworks.cuda as cuda
 
 from cython.operator cimport dereference as deref
 from libcpp.vector cimport vector
@@ -30,7 +29,9 @@ from libcpp.memory cimport unique_ptr, shared_ptr
 from libcpp.string cimport string
 from libc.stdint cimport uint16_t
 
+from cpython.ref cimport Py_INCREF, Py_DECREF
 from genomeworks.cuda.cuda_runtime_api cimport _Stream
+from genomeworks.cuda.cuda cimport CudaStream
 cimport genomeworks.cudaaligner.cudaaligner as cudaaligner
 
 
@@ -129,7 +130,7 @@ cdef class CudaAlignerBatch:
     """Python API for CUDA-accelerated sequence to sequence alignment.
     """
     cdef unique_ptr[cudaaligner.Aligner] aligner
-    cdef public object stream
+    cdef public CudaStream stream
 
     def __cinit__(
             self,
@@ -160,12 +161,18 @@ cdef class CudaAlignerBatch:
         cdef _Stream temp_stream
         if (stream is None):
             temp_stream = NULL
-        elif (not isinstance(stream, cuda.CudaStream)):
+        elif (not isinstance(stream, CudaStream)):
             raise RuntimeError("Type for stream option must be CudaStream")
         else:
             st = stream.stream
             temp_stream = <_Stream>st
-        self.stream = stream  # keep a reference to the stream, such that it gets destroyed after the aligner.
+        # keep a reference to the stream, such that it gets destroyed after the aligner.
+        self.stream = stream
+        # Increasing ref count of CudaStream object to ensure it doesn't get garbage
+        # collected before CudaAlignerBatch object.
+        # NOTE: Ideally this is taken care of by just storing the reference
+        # in the line above, but that doesn't seem to be persistent.
+        Py_INCREF(stream)
 
         cdef cudaaligner.AlignmentType alignment_type_enum
         if (alignment_type == "global"):
@@ -268,6 +275,8 @@ cdef class CudaAlignerBatch:
 
     def __dealloc__(self):
         self.aligner.reset()
+        # Decreasing ref count for CudaStream object.
+        Py_DECREF(self.stream)
 
     def reset(self):
         """Reset the contents of the batch so the same GPU memory can be used to

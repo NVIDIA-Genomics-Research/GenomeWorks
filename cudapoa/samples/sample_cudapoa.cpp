@@ -25,6 +25,7 @@
 #include <vector>
 #include <string>
 #include <unistd.h>
+#include <getopt.h>
 
 using namespace claraparabricks::genomeworks;
 using namespace claraparabricks::genomeworks::cudapoa;
@@ -46,7 +47,7 @@ std::unique_ptr<Batch> initialize_batch(bool msa, const BatchConfig& batch_size)
     // Initialize CUDAPOA batch object for batched processing of POAs on the GPU.
     const int32_t device_id      = 0;
     cudaStream_t stream          = 0;
-    size_t mem_per_batch         = 0.9 * free; // Using 90% of GPU available memory for CUDAPOA batch.
+    int64_t mem_per_batch        = 0.9 * free; // Using 90% of GPU available memory for CUDAPOA batch.
     const int32_t mismatch_score = -6, gap_score = -8, match_score = 8;
     std::unique_ptr<Batch> batch = create_batch(device_id,
                                                 stream,
@@ -63,6 +64,7 @@ std::unique_ptr<Batch> initialize_batch(bool msa, const BatchConfig& batch_size)
 void process_batch(Batch* batch, bool msa_flag, bool print, std::vector<int32_t>& list_of_group_ids, int id_offset)
 {
     batch->generate_poa();
+    std::string error_message, error_hint;
 
     StatusType status = StatusType::success;
     if (msa_flag)
@@ -74,14 +76,20 @@ void process_batch(Batch* batch, bool msa_flag, bool print, std::vector<int32_t>
         status = batch->get_msa(msa, output_status);
         if (status != StatusType::success)
         {
-            std::cerr << "Could not generate MSA for batch : " << status << std::endl;
+            decode_error(status, error_message, error_hint);
+            std::cerr << "Could not generate MSA for batch : " << std::endl;
+            std::cerr << error_message << std::endl
+                      << error_hint << std::endl;
         }
 
         for (int32_t g = 0; g < get_size(msa); g++)
         {
             if (output_status[g] != StatusType::success)
             {
-                std::cerr << "Error generating  MSA for POA group " << list_of_group_ids[g + id_offset] << ". Error type " << output_status[g] << std::endl;
+                decode_error(output_status[g], error_message, error_hint);
+                std::cerr << "Error generating  MSA for POA group " << list_of_group_ids[g + id_offset] << std::endl;
+                std::cerr << error_message << std::endl
+                          << error_hint << std::endl;
             }
             else
             {
@@ -105,14 +113,20 @@ void process_batch(Batch* batch, bool msa_flag, bool print, std::vector<int32_t>
         status = batch->get_consensus(consensus, coverage, output_status);
         if (status != StatusType::success)
         {
-            std::cerr << "Could not generate consensus for batch : " << status << std::endl;
+            decode_error(status, error_message, error_hint);
+            std::cerr << "Could not generate consensus for batch : " << std::endl;
+            std::cerr << error_message << std::endl
+                      << error_hint << std::endl;
         }
 
         for (int32_t g = 0; g < get_size(consensus); g++)
         {
             if (output_status[g] != StatusType::success)
             {
-                std::cerr << "Error generating consensus for POA group " << list_of_group_ids[g + id_offset] << ". Error type " << output_status[g] << std::endl;
+                decode_error(output_status[g], error_message, error_hint);
+                std::cerr << "Error generating  consensus for POA group " << list_of_group_ids[g + id_offset] << std::endl;
+                std::cerr << error_message << std::endl
+                          << error_hint << std::endl;
             }
             else
             {
@@ -131,7 +145,7 @@ int main(int argc, char** argv)
     int c              = 0;
     bool msa           = false;
     bool long_read     = false;
-    BandMode band_mode = BandMode::adaptive_band; // 0: full, 1: static-band, 2: adaptive-band
+    BandMode band_mode = BandMode::adaptive_band; // 0: full, 1: static-band, 2: adaptive-band, 3- static-band-traceback 4- adaptive-band-traceback
     bool help          = false;
     bool print         = false;
     bool print_graph   = false;
@@ -148,9 +162,9 @@ int main(int argc, char** argv)
             long_read = true;
             break;
         case 'b':
-            if (std::stoi(optarg) < 0 || std::stoi(optarg) > 2)
+            if (std::stoi(optarg) < 0 || std::stoi(optarg) > 4)
             {
-                throw std::runtime_error("band-mode must be either 0 for full bands, 1 for static bands or 2 for adaptive bands");
+                throw std::runtime_error("band-mode must be either 0 for full bands, 1 for static bands, 2 for adaptive bands, 3 and 4 for static and adaptive bands with traceback");
             }
             band_mode = static_cast<BandMode>(std::stoi(optarg));
             break;
@@ -211,6 +225,9 @@ int main(int argc, char** argv)
             group.push_back(poa_entry);
         }
     }
+
+    // for error code message
+    std::string error_message, error_hint;
 
     // analyze the POA groups and create a minimal set of batches to process them all
     std::vector<BatchConfig> list_of_batch_sizes;
@@ -286,19 +303,27 @@ int main(int argc, char** argv)
             if (status == StatusType::success)
             {
                 // Check if all sequences in POA group wre added successfully.
+                int32_t num_dropped_seq = 0;
                 for (const auto& s : seq_status)
                 {
                     if (s == StatusType::exceeded_maximum_sequence_size)
                     {
-                        std::cerr << "Dropping sequence because sequence exceeded maximum size" << std::endl;
+                        num_dropped_seq++;
                     }
+                }
+                if (num_dropped_seq > 0)
+                {
+                    std::cerr << "Dropping " << num_dropped_seq << " sequence(s) in POA group " << batch_group_ids[i] << " because it exceeded maximum size" << std::endl;
                 }
                 i++;
             }
 
             if (status != StatusType::exceeded_maximum_poas && status != StatusType::success)
             {
-                std::cout << "Could not add POA group " << batch_group_ids[i] << " to batch " << b << ". Error code " << status << std::endl;
+                decode_error(status, error_message, error_hint);
+                std::cerr << "Could not add POA group " << batch_group_ids[i] << " to batch " << b << std::endl;
+                std::cerr << error_message << std::endl
+                          << error_hint << std::endl;
                 i++;
             }
         }

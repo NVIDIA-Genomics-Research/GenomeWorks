@@ -40,7 +40,7 @@ MatcherGPU::MatcherGPU(DefaultDeviceAllocator allocator,
                        const Index& query_index,
                        const Index& target_index,
                        const cudaStream_t cuda_stream)
-    : anchors_d_(allocator)
+    : anchors_d_(0, allocator, cuda_stream)
 {
     GW_NVTX_RANGE(profile, "matcherGPU");
     if (query_index.unique_representations().size() == 0 || target_index.unique_representations().size() == 0)
@@ -310,6 +310,7 @@ void generate_anchors(
             target_index.smallest_read_id(),
             target_index.number_of_reads(),
             target_index.number_of_basepairs_in_longest_read());
+        GW_CU_CHECK_ERR(cudaPeekAtLastError());
     }
 
     {
@@ -342,6 +343,7 @@ void find_query_target_matches(
                                                                               get_size(query_representations_d),
                                                                               target_representations_d.data(),
                                                                               get_size(target_representations_d));
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 void compute_anchor_starting_indices(

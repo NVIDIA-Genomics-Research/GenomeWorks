@@ -19,6 +19,7 @@
 #include <claraparabricks/genomeworks/cudamapper/overlapper.hpp>
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <limits>
 
 #include "cudamapper_utils.hpp"
 #include "overlapper_triggered.hpp"
@@ -134,13 +135,13 @@ namespace cudamapper
 
 void Overlapper::post_process_overlaps(std::vector<Overlap>& overlaps, const bool drop_fused_overlaps)
 {
-    const auto num_overlaps = get_size(overlaps);
-    bool in_fuse            = false;
-    int fused_target_start;
-    int fused_query_start;
-    int fused_target_end;
-    int fused_query_end;
-    int num_residues = 0;
+    const auto num_overlaps               = get_size(overlaps);
+    bool in_fuse                          = false;
+    position_in_read_t fused_target_start = std::numeric_limits<position_in_read_t>::max();
+    position_in_read_t fused_query_start  = std::numeric_limits<position_in_read_t>::max();
+    position_in_read_t fused_target_end   = std::numeric_limits<position_in_read_t>::max();
+    position_in_read_t fused_query_end    = std::numeric_limits<position_in_read_t>::max();
+    int num_residues                      = 0;
     Overlap prev_overlap;
     std::vector<bool> drop_overlap_mask;
     return;
@@ -307,7 +308,6 @@ void Overlapper::rescue_overlap_ends(std::vector<Overlap>& overlaps,
                                      const std::int32_t extension,
                                      const float required_similarity)
 {
-
     auto reverse_overlap = [](cudamapper::Overlap& overlap, std::uint32_t target_sequence_length) {
         overlap.relative_strand      = overlap.relative_strand == RelativeStrand::Forward ? RelativeStrand::Reverse : RelativeStrand::Forward;
         position_in_read_t start_tmp = overlap.target_start_position_in_read_;
@@ -351,7 +351,7 @@ void Overlapper::rescue_overlap_ends(std::vector<Overlap>& overlaps,
 
         while (rescue_rounds < max_rescue_rounds)
         {
-            details::overlapper::extend_overlap_by_sequence_similarity(overlap, query_view, target_view, 100, 0.9);
+            details::overlapper::extend_overlap_by_sequence_similarity(overlap, query_view, target_view, extension, required_similarity);
             ++rescue_rounds;
             if (overlap.query_end_position_in_read_ == prev_query_start &&
                 overlap.query_end_position_in_read_ == prev_query_end &&

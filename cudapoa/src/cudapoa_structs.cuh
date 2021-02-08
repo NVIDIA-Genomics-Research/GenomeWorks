@@ -26,11 +26,20 @@
 // Maximum number of nodes aligned to each other.
 #define CUDAPOA_MAX_NODE_ALIGNMENTS 50
 
+// Size of read chunks for reading sequences
+#define SIZE_OF_SeqT4 4
+
 // Dimensions for Banded alignment score matrix
 #define WARP_SIZE 32
-#define CELLS_PER_THREAD 4
-#define CUDAPOA_MIN_BAND_WIDTH (CELLS_PER_THREAD * WARP_SIZE)
-#define CUDAPOA_BANDED_MATRIX_RIGHT_PADDING (CELLS_PER_THREAD * 2)
+#define CUDAPOA_CELLS_PER_THREAD 4
+#define CUDAPOA_MIN_BAND_WIDTH (CUDAPOA_CELLS_PER_THREAD * WARP_SIZE)
+#define CUDAPOA_BANDED_MATRIX_RIGHT_PADDING (CUDAPOA_CELLS_PER_THREAD * 2)
+// ad-hoc maximum band-width defined in adaptive banding
+#define CUDAPOA_MAX_ADAPTIVE_BAND_WIDTH 1536
+
+// rerun codes used in adaptive banding
+#define CUDAPOA_SHIFT_ADAPTIVE_BAND_TO_LEFT -10
+#define CUDAPOA_SHIFT_ADAPTIVE_BAND_TO_RIGHT -11
 
 #define CUDAPOA_THREADS_PER_BLOCK 64
 #define CUDAPOA_BANDED_THREADS_PER_BLOCK WARP_SIZE
@@ -39,6 +48,11 @@
 #define FULL_MASK 0xffffffff
 #define CUDAPOA_KERNEL_ERROR_ENCOUNTERED UINT8_MAX
 #define CUDAPOA_KERNEL_NOERROR_ENCOUNTERED 0
+
+// NW return error codes
+#define CUDAPOA_KERNEL_NW_BACKTRACKING_LOOP_FAILED -1
+#define CUDAPOA_KERNEL_NW_ADAPTIVE_STORAGE_FAILED -2
+#define CUDAPOA_KERNEL_NW_TRACEBACK_BUFFER_FAILED -3
 
 namespace claraparabricks
 {
@@ -97,11 +111,13 @@ struct InputDetails
     SizeT* sequence_begin_nodes_ids;
 };
 
-template <typename ScoreT, typename SizeT>
+template <typename ScoreT, typename SizeT, typename TraceT>
 struct AlignmentDetails
 {
     // Device buffer for the scoring matrix for all windows.
     ScoreT* scores;
+    // Device buffer for the backtracking matrix for all windows.
+    TraceT* traceback;
     /// Buffer for storing per row band start location in absolute score matrix for adaptive banding
     SizeT* band_starts;
     /// Buffer for storing per row band widths for adaptive banding
@@ -114,7 +130,7 @@ struct AlignmentDetails
     // preallocated size of scores buffer
     size_t scorebuf_alloc_size = 0;
 
-    // Device buffers for alignment backtrace
+    // Device buffers for alignment traceback
     SizeT* alignment_graph;
     SizeT* alignment_read;
 };
@@ -141,7 +157,6 @@ struct GraphDetails
 
     // Devices buffers to store incoming and outgoing edge weights.
     uint16_t* incoming_edge_weights;
-    uint16_t* outgoing_edge_weights;
 
     // Device buffer to store the topologically sorted graph. Each element
     // of this buffer is an ID of the node.
@@ -150,9 +165,6 @@ struct GraphDetails
     // Device buffer that maintains a mapping between the node ID and its
     // position in the topologically sorted graph.
     SizeT* sorted_poa_node_map;
-
-    // Device buffer to store distance of each graph node to the head node(s), used in adaptive-banding alignment
-    SizeT* node_distance_to_head;
 
     // Device buffer used during topological sort to store incoming
     // edge counts for nodes.
@@ -189,6 +201,12 @@ struct SeqT4
     SeqT r0, r1, r2, r3;
 };
 
+template <>
+struct __align__(4) SeqT4<uint8_t>
+{
+    uint8_t r0, r1, r2, r3;
+};
+
 template <typename ScoreT>
 struct ScoreT4
 {
@@ -196,9 +214,27 @@ struct ScoreT4
 };
 
 template <>
-struct __align__(4) ScoreT4<int16_t>
+struct __align__(8) ScoreT4<int16_t>
 {
     int16_t s0, s1, s2, s3;
+};
+
+template <typename TraceT>
+struct TraceT4
+{
+    TraceT t0, t1, t2, t3;
+};
+
+template <>
+struct __align__(8) TraceT4<int16_t>
+{
+    int16_t t0, t1, t2, t3;
+};
+
+template <>
+struct __align__(4) TraceT4<int8_t>
+{
+    int8_t t0, t1, t2, t3;
 };
 
 } // namespace cudapoa

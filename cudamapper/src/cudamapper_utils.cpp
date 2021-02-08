@@ -38,7 +38,7 @@ std::vector<gw_string_view_t> split_into_kmers(const gw_string_view_t& s, const 
     const std::size_t kmer_count = s.length() - kmer_size + 1;
     std::vector<gw_string_view_t> kmers;
 
-    if (s.length() < kmer_size)
+    if (get_size(s) < kmer_size)
     {
         kmers.push_back(s);
         return kmers;
@@ -46,7 +46,7 @@ std::vector<gw_string_view_t> split_into_kmers(const gw_string_view_t& s, const 
 
     for (std::size_t i = 0; i < kmer_count; i += stride)
     {
-        kmers.push_back(s.substr(i, i + kmer_size));
+        kmers.push_back(s.substr(i, kmer_size));
     }
     return kmers;
 }

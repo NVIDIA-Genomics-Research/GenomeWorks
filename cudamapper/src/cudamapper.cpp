@@ -31,9 +31,7 @@ namespace cudamapper
 
 StatusType Init()
 {
-    if (logging::LoggingStatus::success != logging::Init())
-        return StatusType::generic_error;
-
+    initialize_logger(claraparabricks::genomeworks::logging::LogLevel::warn);
     return StatusType::success;
 }
 

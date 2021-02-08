@@ -42,62 +42,8 @@
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
 
-#include <claraparabricks/genomeworks/gw_config.hpp>
-
 /// \ingroup logging
 /// \{
-
-/// \brief DEBUG log level
-#define gw_log_level_debug 0
-/// \brief INFO log level
-#define gw_log_level_info 1
-/// \brief WARN log level
-#define gw_log_level_warn 2
-/// \brief ERROR log level
-#define gw_log_level_error 3
-/// \brief CRITICAL log level
-#define gw_log_level_critical 4
-/// \brief No logging
-#define gw_log_level_off 5
-
-#ifndef GW_LOG_LEVEL
-#ifndef NDEBUG
-/// \brief Defines the logging level used in the current module
-#define GW_LOG_LEVEL gw_log_level_debug
-#else // NDEBUG
-/// \brief Defines the logging level used in the current module
-#define GW_LOG_LEVEL gw_log_level_error
-#endif // NDEBUG
-#endif // GW_LOG_LEVEL
-
-#if GW_LOG_LEVEL == gw_log_level_info
-/// \brief Set log level to INFO
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_INFO
-#elif GW_LOG_LEVEL == gw_log_level_debug
-/// \brief Set log level to DEBUG
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
-#elif GW_LOG_LEVEL == gw_log_level_warn
-/// \brief Set log level to WARN
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_WARN
-#elif GW_LOG_LEVEL == gw_log_level_error
-/// \brief Set log level to ERROR
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_ERROR
-#elif GW_LOG_LEVEL == gw_log_level_critical
-/// \brief Set log level to CRITICAL
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_CRITICAL
-#else
-/// \brief Set log level to OFF
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_OFF
-#endif
-
-// MUST come after the defines of the logging level!
-#ifdef GW_CUDA_BEFORE_9_2
-// Due to a header file incompatibility with nvcc in CUDA 9.0
-// logging through the logger class in GW is disabled for any .cu files.
-#pragma message("Logging disabled for CUDA Toolkit < 9.2")
-#else
-#include <spdlog/spdlog.h>
-#endif
 
 namespace claraparabricks
 {
@@ -107,88 +53,56 @@ namespace genomeworks
 
 namespace logging
 {
-/// \ingroup logging
-/// Logging status type
-enum class LoggingStatus
+
+/// GenomeWorks Logging levels.
+enum LogLevel
 {
-    success = 0,       ///< Success
-    cannot_open_file,  ///< Initialization could not open the output file requested
-    cannot_open_stdout ///< Stdout could not be opened for logging
+    critical = 0,
+    error,
+    warn,
+    info,
+    debug
 };
 
-/// \ingroup logging
-/// Init Initialize the logging
-/// \param filename if specified, the path/name of the file into which logging should be placed.
-/// The default is stdout
-/// \return success or error status
-LoggingStatus Init(const char* filename = nullptr);
+/// Initialize logger across GenomeWorks.
+/// \param [in] level LogLevel for logger.
+/// \param [in] filename File to redirect log messages to.
+void initialize_logger(LogLevel level, const char* filename = nullptr);
 
-/// \ingroup logging
-/// SetHeader Adjust the header/preface for each log message
-/// \param logTime if true, the detailed time will be prepended to each message.
-/// \param logLocation if true, the file and line location logging will be prepended to each message.
-/// \return success or error status
-LoggingStatus SetHeader(bool logTime, bool logLocation);
-
-/// \ingroup logging
-/// \def GW_LOG_DEBUG
-/// \brief Log at debug level
-///
-/// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
-#ifdef GW_CUDA_BEFORE_9_2
-#define GW_LOG_DEBUG(...)
-#else
-#define GW_LOG_DEBUG(...) SPDLOG_DEBUG(__VA_ARGS__)
-#endif
-
-/// \ingroup logging
-/// \def GW_LOG_INFO
-/// \brief Log at info level
-///
-/// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
-#ifdef GW_CUDA_BEFORE_9_2
-#define GW_LOG_INFO(...)
-#else
-#define GW_LOG_INFO(...) SPDLOG_INFO(__VA_ARGS__)
-#endif
-
-/// \ingroup logging
-/// \def GW_LOG_WARN
-/// \brief Log at warning level
-///
-/// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
-#ifdef GW_CUDA_BEFORE_9_2
-#define GW_LOG_WARN(...)
-#else
-#define GW_LOG_WARN(...) SPDLOG_WARN(__VA_ARGS__)
-#endif
-
-/// \ingroup logging
-/// \def GW_LOG_ERROR
-/// \brief Log at error level
-///
-/// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
-#ifdef GW_CUDA_BEFORE_9_2
-#define GW_LOG_ERROR(...)
-#else
-#define GW_LOG_ERROR(...) SPDLOG_ERROR(__VA_ARGS__)
-#endif
-
-/// \ingroup logging
-/// \def GW_LOG_CRITICAL
-/// \brief Log at fatal/critical error level (does NOT exit)
-///
-/// parameters as per https://github.com/gabime/spdlog/blob/v1.x/README.md
-#ifdef GW_CUDA_BEFORE_9_2
-#define GW_LOG_CRITICAL(...)
-#else
-#define GW_LOG_CRITICAL(...) SPDLOG_CRITICAL(__VA_ARGS__)
-#endif
-
+/// Log messages to logger.
+/// \param [in] level LogLevel for message.
+/// \param [in] file Filename for originating message.
+/// \param [in] line Line number for originating message.
+/// \param [in] msg Content of log message.
+void log(LogLevel level, const char* file, int line, const char* msg);
 } // namespace logging
 
 } // namespace genomeworks
 
 } // namespace claraparabricks
 
+/// \ingroup logging
+/// \def GW_LOG_DEBUG
+/// \brief Log at debug level
+#define GW_LOG_DEBUG(msg) claraparabricks::genomeworks::logging::log(claraparabricks::genomeworks::logging::LogLevel::debug, __FILE__, __LINE__, msg)
+
+/// \ingroup logging
+/// \def GW_LOG_INFO
+/// \brief Log at info level
+#define GW_LOG_INFO(msg) claraparabricks::genomeworks::logging::log(claraparabricks::genomeworks::logging::LogLevel::info, __FILE__, __LINE__, msg)
+
+/// \ingroup logging
+/// \def GW_LOG_WARN
+/// \brief Log at warning level
+#define GW_LOG_WARN(msg) claraparabricks::genomeworks::logging::log(claraparabricks::genomeworks::logging::LogLevel::warn, __FILE__, __LINE__, msg)
+
+/// \ingroup logging
+/// \def GW_LOG_ERROR
+/// \brief Log at error level
+#define GW_LOG_ERROR(msg) claraparabricks::genomeworks::logging::log(claraparabricks::genomeworks::logging::LogLevel::error, __FILE__, __LINE__, msg)
+
+/// \ingroup logging
+/// \def GW_LOG_CRITICAL
+/// \brief Log at fatal/critical error level
+#define GW_LOG_CRITICAL(msg) claraparabricks::genomeworks::logging::log(claraparabricks::genomeworks::logging::LogLevel::critical, __FILE__, __LINE__, msg)
 /// \}

@@ -24,6 +24,7 @@
 #include <cuda_runtime_api.h>
 #include <cassert>
 #include <string>
+#include <memory>
 
 #ifdef GW_PROFILING
 #include <nvToolsExt.h>
@@ -82,11 +83,25 @@ inline void gpu_assert(cudaError_t code, const char* file, int line)
 
     if (code != cudaSuccess)
     {
-        std::string err = "GPU Error:: " +
-                          std::string(cudaGetErrorString(code)) +
-                          " " + std::string(file) +
-                          " " + std::to_string(line);
-        GW_LOG_ERROR("{}\n", err);
+        std::string err = "GPU Error:: " + std::string(cudaGetErrorString(code));
+        if (code == cudaErrorNoKernelImageForDevice)
+        {
+            err += " -- Is the code compiled for the correct GPU architecture?";
+            int32_t device;
+            cudaDeviceProp prop;
+            if (cudaGetDevice(&device) == cudaSuccess)
+            {
+                if (cudaGetDeviceProperties(&prop, device) == cudaSuccess)
+                {
+                    err += " Device has compute capability ";
+                    err += std::to_string(prop.major);
+                    err += std::to_string(prop.minor);
+                    err += ".";
+                }
+            }
+        }
+        err += " " + std::string(file) + " " + std::to_string(line);
+        GW_LOG_ERROR(err.c_str());
         // In Debug mode, this assert will cause a debugger trap
         // which is beneficial when debugging errors.
         assert(false);
@@ -135,7 +150,7 @@ void set_device_value(Type* dst, const Type& src)
 
 /// Copies elements from the range [src, src + n) to the range [dst, dst + n) asynchronously.
 template <typename Type>
-void device_copy_n(const Type* src, size_t n, Type* dst, cudaStream_t stream)
+void device_copy_n_async(const Type* src, size_t n, Type* dst, cudaStream_t stream)
 {
     GW_CU_CHECK_ERR(cudaMemcpyAsync(dst, src, n * sizeof(Type), cudaMemcpyDefault, stream));
 }
@@ -183,6 +198,40 @@ public:
 #endif // GW_PROFILING
 
 } // namespace cudautils
+
+namespace detail
+{
+
+/// \brief A deleter which destroys cuda streams (i.e. cudaStream_t handles)
+struct CudaStreamDeleter
+{
+    /// \brief Destroys a cudaStream_t
+    void operator()(cudaStream_t s) const
+    {
+        if (s)
+        {
+            GW_CU_ABORT_ON_ERR(cudaStreamDestroy(s));
+        }
+    }
+};
+
+} // namespace detail
+
+/// \brief A C++ CUDA stream object managing the native cudaStream_t
+///
+/// Create a stream via make_cuda_stream()
+/// cudaStream lifetime is bound to the CudaStream object.
+using CudaStream = std::unique_ptr<std::remove_pointer<cudaStream_t>::type, detail::CudaStreamDeleter>;
+
+/// \brief Creates a new CUDA stream
+inline CudaStream make_cuda_stream()
+{
+    CudaStream s;
+    cudaStream_t native_handle;
+    GW_CU_CHECK_ERR(cudaStreamCreateWithFlags(&native_handle, cudaStreamNonBlocking));
+    s.reset(native_handle);
+    return s;
+}
 
 /// \brief A class to switch the CUDA device for the current scope using RAII
 ///

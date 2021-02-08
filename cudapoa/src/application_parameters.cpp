@@ -39,7 +39,11 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"msa", no_argument, 0, 'a'},
         {"band-mode", required_argument, 0, 'b'},
         {"band-width", required_argument, 0, 'w'},
+        {"adaptive-storage", required_argument, 0, 's'},
+        {"graph-length", required_argument, 0, 'l'},
+        {"pred-distance", required_argument, 0, 'D'},
         {"dot", required_argument, 0, 'd'},
+        {"gfa", required_argument, 0, 'G'},
         {"max-groups", required_argument, 0, 'M'},
         {"gpu-mem-alloc", required_argument, 0, 'R'},
         {"match", required_argument, 0, 'm'},
@@ -49,7 +53,7 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
         {"help", no_argument, 0, 'h'},
     };
 
-    std::string optstring = "i:ab:w:d:M:R:m:n:g:vh";
+    std::string optstring = "i:ab:w:s:l:D:d:G:M:R:m:n:g:vh";
 
     int32_t argument = 0;
     while ((argument = getopt_long(argc, argv, optstring.c_str(), options, nullptr)) != -1)
@@ -63,17 +67,34 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
             msa = true;
             break;
         case 'b':
-            if (std::stoi(optarg) < 0 || std::stoi(optarg) > 2)
+            if (std::stoi(optarg) < 0 || std::stoi(optarg) > 4)
             {
-                throw std::runtime_error("band-mode must be either 0 for full bands, 1 for static bands or 2 for adaptive bands");
+                throw std::runtime_error("band-mode must be either 0 for full bands, 1 for static bands, 2 for adaptive bands, 3 and 4 for static and adaptive bands with traceback");
             }
             band_mode = static_cast<BandMode>(std::stoi(optarg));
             break;
         case 'w':
             band_width = std::stoi(optarg);
             break;
+        case 's':
+            adaptive_storage = std::stof(optarg);
+            break;
+        case 'l':
+            graph_length = std::stof(optarg);
+            break;
+        case 'D':
+            if (std::stoi(optarg) <= 0)
+            {
+                throw std::runtime_error("pred-distance must be an integer greater than 0");
+            }
+            predecessor_disance = std::stoi(optarg);
+            break;
         case 'd':
             graph_output_path = std::string(optarg);
+            break;
+        case 'G':
+            graph_output_path = std::string(optarg);
+            output_gfa        = true;
             break;
         case 'M':
             max_groups = std::stoi(optarg);
@@ -180,13 +201,25 @@ void ApplicationParameters::help(int32_t exit_code)
             generates msa if this flag is passed [default: consensus])"
               << R"(
         -b, --band-mode  <int>
-            selects banding mode, 0: full-alignment, 1: static band, 2: adaptive band [2])"
+            selects banding mode, 0: full-alignment, 1: static band, 2: adaptive band, 3: traceback static band, 4: traceback adaptive band [2])"
               << R"(
         -w, --band-width <int>
             band-width for banded alignment (must be multiple of 128) [256])"
               << R"(
+        -s, --adaptive-storage  <float>
+            factor to accommodate extra memory for adaptive score matrix. The factor represents ratio of adaptive-banded score matrix to static-banded score matrix [2.0])"
+              << R"(
+        -l, --graph-length  <float>
+            factor to determine maximum length of POA graph. The factor represents ratio of graph length to maximum sequence length in POA group [3.0])"
+              << R"(
+        -D, --pred-distance <int>
+            maximum distance of predecessor nodes that are considered in Needleman-Wunsch computations for static or adaptive-banded. If 0, it will be set equal to 2 x band-width [0])"
+              << R"(
         -d, --dot <file>
             output path for printing graph in DOT format [disabled])"
+              << R"(
+        -G, --gfa <file>
+            output path for printing graph in GFA format [disabled])"
               << R"(
         -M, --max-groups  <int>
             maximum number of POA groups to create from file (-1 for all, > 0 for limited) [-1]

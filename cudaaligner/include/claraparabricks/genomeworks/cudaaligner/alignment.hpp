@@ -69,7 +69,7 @@ public:
     ///        supporting only M, I and D states.
     ///
     /// \return CIGAR string
-    virtual std::string convert_to_cigar() const = 0;
+    virtual std::string convert_to_cigar(CigarFormat format = CigarFormat::basic) const = 0;
 
     /// \brief Returns type of alignment
     ///

@@ -53,7 +53,8 @@ StatusType AlignerGlobalUkkonen::add_alignment(const char* query, int32_t query_
     int32_t const allocated_max_length_difference = this->get_max_target_length() * max_target_query_length_difference;
     if (std::abs(query_length - target_length) > allocated_max_length_difference)
     {
-        GW_LOG_DEBUG("{} {}", "Exceeded maximum length difference b/w target and query allowed : ", allocated_max_length_difference);
+        std::string msg = "Exceeded maximum length difference b/w target and query allowed : " + std::to_string(allocated_max_length_difference);
+        GW_LOG_DEBUG(msg.c_str());
         return StatusType::exceeded_max_alignment_difference;
     }
 

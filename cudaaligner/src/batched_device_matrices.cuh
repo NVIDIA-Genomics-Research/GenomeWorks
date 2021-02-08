@@ -161,7 +161,7 @@ public:
 
         for (int32_t i = 0; i < n_matrices + 1; ++i)
         {
-            offsets_host_[i] = max_elements_per_matrix * i;
+            offsets_host_[i] = static_cast<ptrdiff_t>(max_elements_per_matrix) * i;
         }
 
         construct_device_matrices_async(stream);
@@ -215,8 +215,8 @@ public:
         offsets_.clear_and_resize(offsets_host_.size());
         dev_interface_host_.clear();
         dev_interface_host_.emplace_back(storage_.data(), offsets_.data(), get_size<int32_t>(offsets_host_) - 1);
-        cudautils::device_copy_n(offsets_host_.data(), offsets_host_.size(), offsets_.data(), stream);
-        cudautils::device_copy_n(dev_interface_host_.data(), 1, dev_.data(), stream);
+        cudautils::device_copy_n_async(offsets_host_.data(), offsets_host_.size(), offsets_.data(), stream);
+        cudautils::device_copy_n_async(dev_interface_host_.data(), 1, dev_.data(), stream);
     }
 
     matrix<T> get_matrix(int32_t id, int32_t n_rows, int32_t n_cols, cudaStream_t stream)
@@ -231,7 +231,7 @@ public:
         matrix<T> m(n_rows, n_cols);
         if (n_rows * n_cols > offsets_host_[id + 1] - offsets_host_[id])
             throw std::runtime_error("Requested matrix size is larger than allocated memory on device.");
-        cudautils::device_copy_n(storage_.data() + offsets_host_[id], n_rows * n_cols, m.data(), stream);
+        cudautils::device_copy_n_async(storage_.data() + offsets_host_[id], n_rows * n_cols, m.data(), stream);
         GW_CU_CHECK_ERR(cudaStreamSynchronize(stream));
         return m;
     }

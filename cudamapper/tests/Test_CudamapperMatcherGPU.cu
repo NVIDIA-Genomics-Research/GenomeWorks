@@ -43,33 +43,25 @@ void test_find_query_target_matches(const thrust::host_vector<representation_t>&
 {
     DefaultDeviceAllocator allocator = create_default_device_allocator();
 
-    cudaStream_t cuda_stream;
-    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    CudaStream cuda_stream = make_cuda_stream();
 
-    device_buffer<representation_t> query_representations_d(query_representations_h.size(), allocator, cuda_stream);
-    cudautils::device_copy_n(query_representations_h.data(), query_representations_h.size(), query_representations_d.data(), cuda_stream); // H2D
-    device_buffer<representation_t> target_representations_d(target_representations_h.size(), allocator, cuda_stream);
-    cudautils::device_copy_n(target_representations_h.data(), target_representations_h.size(), target_representations_d.data(), cuda_stream); // H2D
-    device_buffer<int64_t> found_target_indices_d(query_representations_d.size(), allocator, cuda_stream);
+    device_buffer<representation_t> query_representations_d(query_representations_h.size(), allocator, cuda_stream.get());
+    cudautils::device_copy_n_async(query_representations_h.data(), query_representations_h.size(), query_representations_d.data(), cuda_stream.get()); // H2D
+    device_buffer<representation_t> target_representations_d(target_representations_h.size(), allocator, cuda_stream.get());
+    cudautils::device_copy_n_async(target_representations_h.data(), target_representations_h.size(), target_representations_d.data(), cuda_stream.get()); // H2D
+    device_buffer<int64_t> found_target_indices_d(query_representations_d.size(), allocator, cuda_stream.get());
 
-    details::matcher_gpu::find_query_target_matches(found_target_indices_d, query_representations_d, target_representations_d, cuda_stream);
+    details::matcher_gpu::find_query_target_matches(found_target_indices_d, query_representations_d, target_representations_d, cuda_stream.get());
 
     thrust::host_vector<int64_t> found_target_indices_h(found_target_indices_d.size());
-    cudautils::device_copy_n(found_target_indices_d.data(), found_target_indices_d.size(), found_target_indices_h.data()); // D2H
-    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    cudautils::device_copy_n_async(found_target_indices_d.data(), found_target_indices_d.size(), found_target_indices_h.data(), cuda_stream.get()); // D2H
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream.get()));
     ASSERT_EQ(found_target_indices_h.size(), expected_found_target_indices_h.size());
 
     for (int32_t i = 0; i < get_size(found_target_indices_h); ++i)
     {
         EXPECT_EQ(found_target_indices_h[i], expected_found_target_indices_h[i]) << "index: " << i;
     }
-
-    query_representations_d.free();
-    target_representations_d.free();
-    found_target_indices_d.free();
-
-    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
-    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamapperMatcherGPU, test_find_query_target_matches_small_example)
@@ -136,35 +128,26 @@ void test_compute_number_of_anchors(const thrust::host_vector<std::uint32_t>& qu
 {
     DefaultDeviceAllocator allocator = create_default_device_allocator();
 
-    cudaStream_t cuda_stream;
-    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    CudaStream cuda_stream = make_cuda_stream();
 
-    device_buffer<std::uint32_t> query_starting_index_of_each_representation_d(query_starting_index_of_each_representation_h.size(), allocator, cuda_stream);
-    cudautils::device_copy_n(query_starting_index_of_each_representation_h.data(), query_starting_index_of_each_representation_h.size(), query_starting_index_of_each_representation_d.data(), cuda_stream); //H2D
-    device_buffer<std::uint32_t> target_starting_index_of_each_representation_d(target_starting_index_of_each_representation_h.size(), allocator, cuda_stream);
-    cudautils::device_copy_n(target_starting_index_of_each_representation_h.data(), target_starting_index_of_each_representation_h.size(), target_starting_index_of_each_representation_d.data(), cuda_stream); //H2D
-    device_buffer<std::int64_t> found_target_indices_d(found_target_indices_h.size(), allocator, cuda_stream);
-    cudautils::device_copy_n(found_target_indices_h.data(), found_target_indices_h.size(), found_target_indices_d.data(), cuda_stream); // H2D
+    device_buffer<std::uint32_t> query_starting_index_of_each_representation_d(query_starting_index_of_each_representation_h.size(), allocator, cuda_stream.get());
+    cudautils::device_copy_n_async(query_starting_index_of_each_representation_h.data(), query_starting_index_of_each_representation_h.size(), query_starting_index_of_each_representation_d.data(), cuda_stream.get()); //H2D
+    device_buffer<std::uint32_t> target_starting_index_of_each_representation_d(target_starting_index_of_each_representation_h.size(), allocator, cuda_stream.get());
+    cudautils::device_copy_n_async(target_starting_index_of_each_representation_h.data(), target_starting_index_of_each_representation_h.size(), target_starting_index_of_each_representation_d.data(), cuda_stream.get()); //H2D
+    device_buffer<std::int64_t> found_target_indices_d(found_target_indices_h.size(), allocator, cuda_stream.get());
+    cudautils::device_copy_n_async(found_target_indices_h.data(), found_target_indices_h.size(), found_target_indices_d.data(), cuda_stream.get()); // H2D
     device_buffer<std::int64_t> anchor_starting_indices_d(found_target_indices_h.size(), allocator);
-    cudautils::device_copy_n(found_target_indices_h.data(), found_target_indices_h.size(), found_target_indices_d.data(), cuda_stream); // H2D
+    cudautils::device_copy_n_async(found_target_indices_h.data(), found_target_indices_h.size(), found_target_indices_d.data(), cuda_stream.get()); // H2D
 
-    details::matcher_gpu::compute_anchor_starting_indices(anchor_starting_indices_d, query_starting_index_of_each_representation_d, found_target_indices_d, target_starting_index_of_each_representation_d, cuda_stream);
+    details::matcher_gpu::compute_anchor_starting_indices(anchor_starting_indices_d, query_starting_index_of_each_representation_d, found_target_indices_d, target_starting_index_of_each_representation_d, cuda_stream.get());
 
     thrust::host_vector<std::int64_t> anchor_starting_indices_h(anchor_starting_indices_d.size());
-    cudautils::device_copy_n(anchor_starting_indices_d.data(), anchor_starting_indices_d.size(), anchor_starting_indices_h.data(), cuda_stream); // D2H
-    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    cudautils::device_copy_n_async(anchor_starting_indices_d.data(), anchor_starting_indices_d.size(), anchor_starting_indices_h.data(), cuda_stream.get()); // D2H
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream.get()));
     for (int32_t i = 0; i < get_size(found_target_indices_h); ++i)
     {
         EXPECT_EQ(anchor_starting_indices_h[i], expected_anchor_starting_indices_h[i]);
     }
-
-    query_starting_index_of_each_representation_d.free();
-    target_starting_index_of_each_representation_d.free();
-    found_target_indices_d.free();
-    anchor_starting_indices_d.free();
-
-    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
-    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamapperMatcherGPU, test_compute_number_of_anchors_small_example)
@@ -254,27 +237,26 @@ void test_generate_anchors(
 {
     DefaultDeviceAllocator allocator = create_default_device_allocator();
 
-    cudaStream_t cuda_stream;
-    GW_CU_CHECK_ERR(cudaStreamCreate(&cuda_stream));
+    CudaStream cuda_stream = make_cuda_stream();
 
-    device_buffer<std::int64_t> anchor_starting_indices_d(anchor_starting_indices_h.size(), allocator, cuda_stream);
-    cudautils::device_copy_n(anchor_starting_indices_h.data(), anchor_starting_indices_h.size(), anchor_starting_indices_d.data(), cuda_stream); // H2D
-    device_buffer<std::uint32_t> query_starting_index_of_each_representation_d(query_starting_index_of_each_representation_h.size(), allocator, cuda_stream);
-    cudautils::device_copy_n(query_starting_index_of_each_representation_h.data(), query_starting_index_of_each_representation_h.size(), query_starting_index_of_each_representation_d.data(), cuda_stream); // H2D
-    device_buffer<std::int64_t> found_target_indices_d(found_target_indices_h.size(), allocator, cuda_stream);
-    cudautils::device_copy_n(found_target_indices_h.data(), found_target_indices_h.size(), found_target_indices_d.data(), cuda_stream); //H2D
-    device_buffer<std::uint32_t> target_starting_index_of_each_representation_d(target_starting_index_of_each_representation_h.size(), allocator, cuda_stream);
-    cudautils::device_copy_n(target_starting_index_of_each_representation_h.data(), target_starting_index_of_each_representation_h.size(), target_starting_index_of_each_representation_d.data(), cuda_stream); // H2D
-    device_buffer<read_id_t> query_read_ids_d(query_read_ids_h.size(), allocator, cuda_stream);
-    cudautils::device_copy_n(query_read_ids_h.data(), query_read_ids_h.size(), query_read_ids_d.data(), cuda_stream); // H2D
-    device_buffer<position_in_read_t> query_positions_in_read_d(query_positions_in_read_h.size(), allocator, cuda_stream);
-    cudautils::device_copy_n(query_positions_in_read_h.data(), query_positions_in_read_h.size(), query_positions_in_read_d.data(), cuda_stream); // H2D
-    device_buffer<read_id_t> target_read_ids_d(target_read_ids_h.size(), allocator, cuda_stream);
-    cudautils::device_copy_n(target_read_ids_h.data(), target_read_ids_h.size(), target_read_ids_d.data(), cuda_stream); //H2D
-    device_buffer<position_in_read_t> target_positions_in_read_d(target_positions_in_read_h.size(), allocator, cuda_stream);
-    cudautils::device_copy_n(target_positions_in_read_h.data(), target_positions_in_read_h.size(), target_positions_in_read_d.data(), cuda_stream); //H2D
+    device_buffer<std::int64_t> anchor_starting_indices_d(anchor_starting_indices_h.size(), allocator, cuda_stream.get());
+    cudautils::device_copy_n_async(anchor_starting_indices_h.data(), anchor_starting_indices_h.size(), anchor_starting_indices_d.data(), cuda_stream.get()); // H2D
+    device_buffer<std::uint32_t> query_starting_index_of_each_representation_d(query_starting_index_of_each_representation_h.size(), allocator, cuda_stream.get());
+    cudautils::device_copy_n_async(query_starting_index_of_each_representation_h.data(), query_starting_index_of_each_representation_h.size(), query_starting_index_of_each_representation_d.data(), cuda_stream.get()); // H2D
+    device_buffer<std::int64_t> found_target_indices_d(found_target_indices_h.size(), allocator, cuda_stream.get());
+    cudautils::device_copy_n_async(found_target_indices_h.data(), found_target_indices_h.size(), found_target_indices_d.data(), cuda_stream.get()); //H2D
+    device_buffer<std::uint32_t> target_starting_index_of_each_representation_d(target_starting_index_of_each_representation_h.size(), allocator, cuda_stream.get());
+    cudautils::device_copy_n_async(target_starting_index_of_each_representation_h.data(), target_starting_index_of_each_representation_h.size(), target_starting_index_of_each_representation_d.data(), cuda_stream.get()); // H2D
+    device_buffer<read_id_t> query_read_ids_d(query_read_ids_h.size(), allocator, cuda_stream.get());
+    cudautils::device_copy_n_async(query_read_ids_h.data(), query_read_ids_h.size(), query_read_ids_d.data(), cuda_stream.get()); // H2D
+    device_buffer<position_in_read_t> query_positions_in_read_d(query_positions_in_read_h.size(), allocator, cuda_stream.get());
+    cudautils::device_copy_n_async(query_positions_in_read_h.data(), query_positions_in_read_h.size(), query_positions_in_read_d.data(), cuda_stream.get()); // H2D
+    device_buffer<read_id_t> target_read_ids_d(target_read_ids_h.size(), allocator, cuda_stream.get());
+    cudautils::device_copy_n_async(target_read_ids_h.data(), target_read_ids_h.size(), target_read_ids_d.data(), cuda_stream.get()); //H2D
+    device_buffer<position_in_read_t> target_positions_in_read_d(target_positions_in_read_h.size(), allocator, cuda_stream.get());
+    cudautils::device_copy_n_async(target_positions_in_read_h.data(), target_positions_in_read_h.size(), target_positions_in_read_d.data(), cuda_stream.get()); //H2D
 
-    device_buffer<Anchor> anchors_d(anchor_starting_indices_h.back(), allocator, cuda_stream);
+    device_buffer<Anchor> anchors_d(anchor_starting_indices_h.back(), allocator, cuda_stream.get());
 
     MockIndex query_index(allocator);
     EXPECT_CALL(query_index, first_occurrence_of_representations).WillRepeatedly(testing::ReturnRef(query_starting_index_of_each_representation_d));
@@ -299,8 +281,8 @@ void test_generate_anchors(
                                                       target_index);
 
     thrust::host_vector<Anchor> anchors_h(anchors_d.size());
-    cudautils::device_copy_n(anchors_d.data(), anchors_d.size(), anchors_h.data()); // D2H
-    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
+    cudautils::device_copy_n_async(anchors_d.data(), anchors_d.size(), anchors_h.data(), cuda_stream.get()); // D2H
+    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream.get()));
     ASSERT_EQ(anchors_h.size(), expected_anchors_h.size());
 
     for (int64_t i = 0; i < get_size(anchors_h); ++i)
@@ -310,18 +292,6 @@ void test_generate_anchors(
         EXPECT_EQ(anchors_h[i].target_read_id_, expected_anchors_h[i].target_read_id_) << " index: " << i;
         EXPECT_EQ(anchors_h[i].target_position_in_read_, expected_anchors_h[i].target_position_in_read_) << " index: " << i;
     }
-
-    anchor_starting_indices_d.free();
-    query_starting_index_of_each_representation_d.free();
-    found_target_indices_d.free();
-    target_starting_index_of_each_representation_d.free();
-    query_read_ids_d.free();
-    query_positions_in_read_d.free();
-    target_read_ids_d.free();
-    target_positions_in_read_d.free();
-
-    GW_CU_CHECK_ERR(cudaStreamSynchronize(cuda_stream));
-    GW_CU_CHECK_ERR(cudaStreamDestroy(cuda_stream));
 }
 
 TEST(TestCudamapperMatcherGPU, test_generate_anchors_small_example_32_bit_positions)
@@ -669,8 +639,10 @@ TEST(TestCudamapperMatcherGPU, OneReadOneMinimizer)
 {
     DefaultDeviceAllocator allocator        = create_default_device_allocator();
     std::unique_ptr<io::FastaParser> parser = io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta");
-    std::unique_ptr<Index> query_index      = Index::create_index(allocator, *parser, 0, parser->get_num_seqences(), 4, 1);
-    std::unique_ptr<Index> target_index     = Index::create_index(allocator, *parser, 0, parser->get_num_seqences(), 4, 1);
+    std::unique_ptr<Index> query_index      = Index::create_index_async(allocator, *parser, IndexDescriptor(0, parser->get_num_seqences()), 4, 1);
+    query_index->wait_to_be_ready();
+    std::unique_ptr<Index> target_index = Index::create_index_async(allocator, *parser, IndexDescriptor(0, parser->get_num_seqences()), 4, 1);
+    target_index->wait_to_be_ready();
     MatcherGPU matcher(allocator, *query_index, *target_index);
 
     thrust::host_vector<Anchor> anchors(matcher.anchors().size());
@@ -682,8 +654,10 @@ TEST(TestCudamapperMatcherGPU, AtLeastOneIndexEmpty)
 {
     DefaultDeviceAllocator allocator        = create_default_device_allocator();
     std::unique_ptr<io::FastaParser> parser = io::create_kseq_fasta_parser(std::string(CUDAMAPPER_BENCHMARK_DATA_DIR) + "/gatt.fasta");
-    std::unique_ptr<Index> index_full       = Index::create_index(allocator, *parser, 0, parser->get_num_seqences(), 4, 1);
-    std::unique_ptr<Index> index_empty      = Index::create_index(allocator, *parser, 0, parser->get_num_seqences(), 5, 1); // kmer longer than read
+    std::unique_ptr<Index> index_full       = Index::create_index_async(allocator, *parser, IndexDescriptor(0, parser->get_num_seqences()), 4, 1);
+    index_full->wait_to_be_ready();
+    std::unique_ptr<Index> index_empty = Index::create_index_async(allocator, *parser, IndexDescriptor(0, parser->get_num_seqences()), 5, 1); // kmer longer than read
+    index_empty->wait_to_be_ready();
 
     {
         MatcherGPU matcher(allocator, *index_full, *index_empty);
