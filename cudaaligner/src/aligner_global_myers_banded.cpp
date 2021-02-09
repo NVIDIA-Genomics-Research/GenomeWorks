@@ -24,7 +24,6 @@
 #include <claraparabricks/genomeworks/utils/genomeutils.hpp>
 #include <claraparabricks/genomeworks/utils/mathutils.hpp>
 #include <claraparabricks/genomeworks/utils/pinned_host_vector.hpp>
-#include <cuda/atomic>
 
 namespace claraparabricks
 {
@@ -127,7 +126,7 @@ struct AlignerGlobalMyersBanded::InternalData
     device_buffer<char> seq_d;
     device_buffer<int64_t> seq_starts_d;
     device_buffer<int32_t> scheduling_index_d;
-    device_buffer<cuda::atomic<int32_t, cuda::thread_scope_device>> scheduling_atomic_d;
+    device_buffer<int32_t> scheduling_atomic_d;
     device_buffer<int8_t> results_d;
     device_buffer<int64_t> result_starts_d;
     device_buffer<int32_t> result_lengths_d;
