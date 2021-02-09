@@ -19,8 +19,8 @@
 
 
 ## Usage
-# bash update-version.sh <type>
-#     where <type> is either `major`, `minor`, `patch`
+# bash update-version.sh
+# Promotes patch version, version format : v<Year>.<Month>.<patch>
 
 set -e
 
