@@ -59,27 +59,27 @@ void check_if_index_is_correct(const std::shared_ptr<const Index>& index,
 
     ASSERT_EQ(get_size(index->representations()), get_size(expected_representations)) << " test_uid: " << test_uid;
     std::vector<representation_t> index_representations(index->representations().size());
-    cudautils::device_copy_n(index->representations().data(), index->representations().size(), index_representations.data(), cuda_stream); // D2H
+    cudautils::device_copy_n_async(index->representations().data(), index->representations().size(), index_representations.data(), cuda_stream); // D2H
 
     ASSERT_EQ(get_size(index->read_ids()), get_size(expected_read_ids)) << " test_uid: " << test_uid;
     std::vector<read_id_t> index_read_ids(index->read_ids().size());
-    cudautils::device_copy_n(index->read_ids().data(), index->read_ids().size(), index_read_ids.data(), cuda_stream); // D2H
+    cudautils::device_copy_n_async(index->read_ids().data(), index->read_ids().size(), index_read_ids.data(), cuda_stream); // D2H
 
     ASSERT_EQ(get_size(index->positions_in_reads()), get_size(expected_positions_in_reads)) << " test_uid: " << test_uid;
     std::vector<position_in_read_t> index_positions_in_reads(index->positions_in_reads().size());
-    cudautils::device_copy_n(index->positions_in_reads().data(), index->positions_in_reads().size(), index_positions_in_reads.data(), cuda_stream); // D2H
+    cudautils::device_copy_n_async(index->positions_in_reads().data(), index->positions_in_reads().size(), index_positions_in_reads.data(), cuda_stream); // D2H
 
     ASSERT_EQ(get_size(index->directions_of_reads()), get_size(expected_directions_of_reads)) << " test_uid: " << test_uid;
     std::vector<SketchElement::DirectionOfRepresentation> index_directions_of_reads(index->directions_of_reads().size());
-    cudautils::device_copy_n(index->directions_of_reads().data(), index->directions_of_reads().size(), index_directions_of_reads.data(), cuda_stream); // D2H
+    cudautils::device_copy_n_async(index->directions_of_reads().data(), index->directions_of_reads().size(), index_directions_of_reads.data(), cuda_stream); // D2H
 
     ASSERT_EQ(get_size(index->unique_representations()), get_size(expected_unique_representations)) << " test_uid: " << test_uid;
     std::vector<representation_t> index_unique_representations(index->unique_representations().size());
-    cudautils::device_copy_n(index->unique_representations().data(), index->unique_representations().size(), index_unique_representations.data(), cuda_stream); // D2H
+    cudautils::device_copy_n_async(index->unique_representations().data(), index->unique_representations().size(), index_unique_representations.data(), cuda_stream); // D2H
 
     ASSERT_EQ(get_size(index->first_occurrence_of_representations()), get_size(expected_first_occurrence_of_representations)) << " test_uid: " << test_uid;
     std::vector<std::uint32_t> index_first_occurrence_of_representations(index->first_occurrence_of_representations().size());
-    cudautils::device_copy_n(index->first_occurrence_of_representations().data(), index->first_occurrence_of_representations().size(), index_first_occurrence_of_representations.data(), cuda_stream); // D2H
+    cudautils::device_copy_n_async(index->first_occurrence_of_representations().data(), index->first_occurrence_of_representations().size(), index_first_occurrence_of_representations.data(), cuda_stream); // D2H
 
     read_id_t index_number_of_reads = index->number_of_reads();
 

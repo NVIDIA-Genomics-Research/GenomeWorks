@@ -76,7 +76,7 @@ memory_distribution split_available_memory(const int64_t max_device_memory, cons
 
     const float mem_req_total_per_bp = 2 * mem_req_sequence + mem_req_results + mem_req_query_patterns + 2 * mem_req_pmvs_matrix + mem_req_score_matrix;
 
-    const float fmax_device_memory = static_cast<float>(max_device_memory) * 0.95; // reserve 5% for misc
+    const float fmax_device_memory = static_cast<float>(max_device_memory) * 0.95f; // reserve 5% for misc
 
     memory_distribution r;
     r.sequence_memory       = static_cast<int64_t>(fmax_device_memory / mem_req_total_per_bp * mem_req_sequence);
@@ -240,7 +240,7 @@ StatusType AlignerGlobalMyersBanded::add_alignment(const char* query, int32_t qu
 
 StatusType AlignerGlobalMyersBanded::align_all()
 {
-    using cudautils::device_copy_n;
+    using cudautils::device_copy_n_async;
     const auto n_alignments = get_size(alignments_);
     if (n_alignments == 0)
         return StatusType::success;
@@ -278,9 +278,9 @@ StatusType AlignerGlobalMyersBanded::align_all()
     {
         result_lengths_d.clear_and_resize(n_alignments);
     }
-    device_copy_n(seq_h.data(), seq_starts_h.back(), seq_d.data(), stream_);
-    device_copy_n(seq_starts_h.data(), 2 * n_alignments + 1, seq_starts_d.data(), stream_);
-    device_copy_n(result_starts_h.data(), n_alignments + 1, result_starts_d.data(), stream_);
+    device_copy_n_async(seq_h.data(), seq_starts_h.back(), seq_d.data(), stream_);
+    device_copy_n_async(seq_starts_h.data(), 2 * n_alignments + 1, seq_starts_d.data(), stream_);
+    device_copy_n_async(result_starts_h.data(), n_alignments + 1, result_starts_d.data(), stream_);
 
     myers_banded_gpu(results_d.data(), result_lengths_d.data(), result_starts_d.data(),
                      seq_d.data(), seq_starts_d.data(), n_alignments, max_bandwidth_,
@@ -290,8 +290,8 @@ StatusType AlignerGlobalMyersBanded::align_all()
     result_lengths_h.clear();
     result_lengths_h.resize(n_alignments);
 
-    device_copy_n(results_d.data(), result_starts_h.back(), results_h.data(), stream_);
-    device_copy_n(result_lengths_d.data(), n_alignments, result_lengths_h.data(), stream_);
+    device_copy_n_async(results_d.data(), result_starts_h.back(), results_h.data(), stream_);
+    device_copy_n_async(result_lengths_d.data(), n_alignments, result_lengths_h.data(), stream_);
 
     return StatusType::success;
 }

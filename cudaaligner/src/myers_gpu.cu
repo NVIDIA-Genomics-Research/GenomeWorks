@@ -351,9 +351,8 @@ __global__ void myers_compute_score_matrix_kernel(
     GW_CONSTEXPR int32_t warp_size = 32;
     assert(warpSize == warp_size);
     assert(threadIdx.x < warp_size);
-    assert(blockIdx.x == 0);
 
-    const int32_t alignment_idx = blockIdx.y * blockDim.y + threadIdx.y;
+    const int32_t alignment_idx = blockIdx.x;
     if (alignment_idx >= n_alignments)
         return;
     const int32_t query_size        = sequence_lengths_d[2 * alignment_idx];
@@ -689,7 +688,6 @@ myers_compute_scores_edit_dist_banded(
     // Note: 0-th row of the NW matrix is implicit for pv, mv and score! (given by the inital warp_carry)
     assert(warpSize == warp_size);
     assert(threadIdx.x < warp_size);
-    assert(blockIdx.x == 0);
 
     assert(target_size > 0);
     assert(query_size > 0);
@@ -781,10 +779,9 @@ __global__ void myers_banded_kernel(
 {
     assert(warpSize == warp_size);
     assert(threadIdx.x < warp_size);
-    assert(blockIdx.x == 0);
     assert(max_bandwidth % word_size != 1); // we need at least two bits in the last word
 
-    const int32_t alignment_idx = blockIdx.y * blockDim.y + threadIdx.y;
+    const int32_t alignment_idx = blockIdx.x;
     if (alignment_idx >= n_alignments)
         return;
     const char* const query   = sequences_d + sequence_starts_d[2 * alignment_idx];
@@ -904,11 +901,12 @@ int32_t myers_compute_edit_distance(std::string const& target, std::string const
     batched_device_matrices<myers::WordType> query_patterns(1, n_words * 4, allocator, stream.get());
 
     std::array<int32_t, 2> lengths = {static_cast<int32_t>(get_size(query)), static_cast<int32_t>(get_size(target))};
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data(), query.data(), sizeof(char) * get_size(query), cudaMemcpyHostToDevice, stream.get()));
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data() + max_sequence_length, target.data(), sizeof(char) * get_size(target), cudaMemcpyHostToDevice, stream.get()));
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d.data(), lengths.data(), sizeof(int32_t) * 2, cudaMemcpyHostToDevice, stream.get()));
+    cudautils::device_copy_n_async(query.data(), get_size(query), sequences_d.data(), stream.get());
+    cudautils::device_copy_n_async(target.data(), get_size(target), sequences_d.data() + max_sequence_length, stream.get());
+    cudautils::device_copy_n_async(lengths.data(), 2, sequence_lengths_d.data(), stream.get());
 
     myers::myers_compute_score_matrix_kernel<<<1, warp_size, 0, stream.get()>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d.data(), sequence_lengths_d.data(), max_sequence_length, 1);
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
     matrix<int32_t> score_host = score.get_matrix(0, n_words, get_size(target) + 1, stream.get());
     return score_host(n_words - 1, get_size(target));
@@ -948,17 +946,19 @@ matrix<int32_t> myers_get_full_score_matrix(std::string const& target, std::stri
     batched_device_matrices<int32_t> fullscore(1, (get_size(query) + 1) * (get_size(target) + 1), allocator, stream.get());
 
     std::array<int32_t, 2> lengths = {static_cast<int32_t>(get_size(query)), static_cast<int32_t>(get_size(target))};
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data(), query.data(), sizeof(char) * get_size(query), cudaMemcpyHostToDevice, stream.get()));
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data() + max_sequence_length, target.data(), sizeof(char) * get_size(target), cudaMemcpyHostToDevice, stream.get()));
-    GW_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d.data(), lengths.data(), sizeof(int32_t) * 2, cudaMemcpyHostToDevice, stream.get()));
+    cudautils::device_copy_n_async(query.data(), get_size(query), sequences_d.data(), stream.get());
+    cudautils::device_copy_n_async(target.data(), get_size(target), sequences_d.data() + max_sequence_length, stream.get());
+    cudautils::device_copy_n_async(lengths.data(), 2, sequence_lengths_d.data(), stream.get());
 
     myers::myers_compute_score_matrix_kernel<<<1, warp_size, 0, stream.get()>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d.data(), sequence_lengths_d.data(), max_sequence_length, 1);
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
     {
         dim3 n_threads = {32, 4, 1};
         dim3 n_blocks  = {1, 1, 1};
         n_blocks.x     = ceiling_divide<int32_t>(get_size<int32_t>(query) + 1, n_threads.x);
         n_blocks.y     = ceiling_divide<int32_t>(get_size<int32_t>(target) + 1, n_threads.y);
         myers::myers_convert_to_full_score_matrix_kernel<<<n_blocks, n_threads, 0, stream.get()>>>(fullscore.get_device_interface(), pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), sequence_lengths_d.data(), 0);
+        GW_CU_CHECK_ERR(cudaPeekAtLastError());
     }
 
     matrix<int32_t> fullscore_host = fullscore.get_matrix(0, get_size(query) + 1, get_size(target) + 1, stream.get());
@@ -978,7 +978,7 @@ void myers_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length
 {
     {
         const dim3 threads(warp_size, 1, 1);
-        const dim3 blocks(1, ceiling_divide<int32_t>(n_alignments, threads.y), 1);
+        const dim3 blocks(n_alignments, 1, 1);
         myers::myers_compute_score_matrix_kernel<<<blocks, threads, 0, stream>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d, sequence_lengths_d, max_sequence_length, n_alignments);
     }
     {
@@ -986,6 +986,7 @@ void myers_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length
         const dim3 blocks(ceiling_divide<int32_t>(n_alignments, threads.x), 1, 1);
         myers::myers_backtrace_kernel<<<blocks, threads, 0, stream>>>(paths_d, path_lengths_d, max_path_length, pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), sequence_lengths_d, n_alignments);
     }
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 void myers_banded_gpu(int8_t* paths_d, int32_t* path_lengths_d, int64_t const* path_starts_d,
@@ -1000,10 +1001,11 @@ void myers_banded_gpu(int8_t* paths_d, int32_t* path_lengths_d, int64_t const* p
                       cudaStream_t stream)
 {
     const dim3 threads(warp_size, 1, 1);
-    const dim3 blocks(1, ceiling_divide<int32_t>(n_alignments, threads.y), 1);
+    const dim3 blocks(n_alignments, 1, 1);
     myers::myers_banded_kernel<<<blocks, threads, 0, stream>>>(paths_d, path_lengths_d, path_starts_d,
                                                                pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(),
                                                                sequences_d, sequence_starts_d, max_bandwidth, n_alignments);
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 } // namespace cudaaligner

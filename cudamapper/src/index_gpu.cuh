@@ -539,6 +539,7 @@ void filter_out_most_common_representations(DefaultDeviceAllocator allocator,
                                                                                                                     unique_representation_index_after_filtering_d.data(),
                                                                                                                     unique_representations_after_compression_d.data(),
                                                                                                                     first_occurrence_of_representations_after_compression_d.data());
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
     // *** remove filtered out elements (compress) from other data arrays ***
 
@@ -573,6 +574,7 @@ void filter_out_most_common_representations(DefaultDeviceAllocator allocator,
                                                                                                          read_ids_after_compression_d.data(),
                                                                                                          positions_in_reads_after_compression_d.data(),
                                                                                                          directions_of_representations_after_compression_d.data());
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
     // *** swap vectors with the input arrays ***
     swap(unique_representations_d, unique_representations_after_compression_d);
@@ -645,12 +647,12 @@ IndexGPU<SketchElementImpl>::IndexGPU(DefaultDeviceAllocator allocator,
     number_of_reads_                     = index_host_copy->number_of_reads();
     number_of_basepairs_in_longest_read_ = index_host_copy->number_of_basepairs_in_longest_read();
 
-    cudautils::device_copy_n(index_host_copy->representations().data, index_host_copy->representations().size, representations_d_.data(), cuda_stream);
-    cudautils::device_copy_n(index_host_copy->read_ids().data, index_host_copy->read_ids().size, read_ids_d_.data(), cuda_stream);
-    cudautils::device_copy_n(index_host_copy->positions_in_reads().data, index_host_copy->positions_in_reads().size, positions_in_reads_d_.data(), cuda_stream);
-    cudautils::device_copy_n(index_host_copy->directions_of_reads().data, index_host_copy->directions_of_reads().size, directions_of_reads_d_.data(), cuda_stream);
-    cudautils::device_copy_n(index_host_copy->unique_representations().data, index_host_copy->unique_representations().size, unique_representations_d_.data(), cuda_stream);
-    cudautils::device_copy_n(index_host_copy->first_occurrence_of_representations().data, index_host_copy->first_occurrence_of_representations().size, first_occurrence_of_representations_d_.data(), cuda_stream);
+    cudautils::device_copy_n_async(index_host_copy->representations().data, index_host_copy->representations().size, representations_d_.data(), cuda_stream);
+    cudautils::device_copy_n_async(index_host_copy->read_ids().data, index_host_copy->read_ids().size, read_ids_d_.data(), cuda_stream);
+    cudautils::device_copy_n_async(index_host_copy->positions_in_reads().data, index_host_copy->positions_in_reads().size, positions_in_reads_d_.data(), cuda_stream);
+    cudautils::device_copy_n_async(index_host_copy->directions_of_reads().data, index_host_copy->directions_of_reads().size, directions_of_reads_d_.data(), cuda_stream);
+    cudautils::device_copy_n_async(index_host_copy->unique_representations().data, index_host_copy->unique_representations().size, unique_representations_d_.data(), cuda_stream);
+    cudautils::device_copy_n_async(index_host_copy->first_occurrence_of_representations().data, index_host_copy->first_occurrence_of_representations().size, first_occurrence_of_representations_d_.data(), cuda_stream);
 }
 
 template <typename SketchElementImpl>
@@ -881,15 +883,15 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
 
     {
         GW_NVTX_RANGE(profiler, "IndexGPU::generate_index::move_basepairs_to_gpu");
-        cudautils::device_copy_n(read_id_to_basepairs_section_h.data(),
-                                 read_id_to_basepairs_section_h.size(),
-                                 read_id_to_basepairs_section_d.data(),
-                                 cuda_stream); // H2D
+        cudautils::device_copy_n_async(read_id_to_basepairs_section_h.data(),
+                                       read_id_to_basepairs_section_h.size(),
+                                       read_id_to_basepairs_section_d.data(),
+                                       cuda_stream); // H2D
 
-        cudautils::device_copy_n(merged_basepairs_h.data(),
-                                 merged_basepairs_h.size(),
-                                 merged_basepairs_d.data(),
-                                 cuda_stream); // H2D
+        cudautils::device_copy_n_async(merged_basepairs_h.data(),
+                                       merged_basepairs_h.size(),
+                                       merged_basepairs_d.data(),
+                                       cuda_stream); // H2D
     }
 
     // sketch elements get generated here
@@ -944,6 +946,7 @@ void IndexGPU<SketchElementImpl>::generate_index(const io::FastaParser& parser,
                                                                                               positions_in_reads_d_.data(),
                                                                                               directions_of_reads_d_.data(),
                                                                                               representations_d_.size());
+        GW_CU_CHECK_ERR(cudaPeekAtLastError());
     }
 
     // now generate the index elements

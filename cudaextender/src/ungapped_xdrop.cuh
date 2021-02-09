@@ -15,9 +15,11 @@
 */
 /*
 * This algorithm was adapted from SegAlign's Ungapped Extender authored by
-* Sneha Goenka (gsneha@stanford.edu) and Yatish Turakhia (yturakhi@uscs.edu).
+* Sneha Goenka (gsneha@stanford.edu) and Yatish Turakhia (yturakhi@ucsc.edu).
 * Source code for original implementation and use in SegAlign can be found
 * here: https://github.com/gsneha26/SegAlign
+* Description of the algorithm and original implementation can be found in the SegAlign 
+* paper published in SC20 (https://doi.ieeecomputersociety.org/10.1109/SC41405.2020.00043)
 */
 #pragma once
 

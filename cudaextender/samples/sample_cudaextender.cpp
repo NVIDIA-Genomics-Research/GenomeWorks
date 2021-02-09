@@ -37,7 +37,7 @@ static void print_scored_segment_pairs(const std::vector<ScoredSegmentPair>& sco
     std::cout << "Target Position, Query Position, Length, Score" << std::endl;
     for (const auto& segment : scored_segment_pairs)
     {
-        std::cout << segment.seed_pair.target_position_in_read << "," << segment.seed_pair.query_position_in_read
+        std::cout << segment.start_coord.target_position_in_read << "," << segment.start_coord.query_position_in_read
                   << "," << segment.length << "," << segment.score << std::endl;
     }
 }
@@ -154,9 +154,9 @@ int main(int argc, char* argv[])
         device_buffer<int32_t> d_num_ssp(1, allocator, stream0.get());
 
         // Async Memcopy all the input values to device
-        device_copy_n(h_encoded_query.data(), get_size(query_sequence), d_query.data(), stream0.get());
-        device_copy_n(h_encoded_target.data(), get_size(target_sequence), d_target.data(), stream0.get());
-        device_copy_n(h_seed_pairs.data(), get_size(h_seed_pairs), d_seed_pairs.data(), stream0.get());
+        device_copy_n_async(h_encoded_query.data(), get_size(query_sequence), d_query.data(), stream0.get());
+        device_copy_n_async(h_encoded_target.data(), get_size(target_sequence), d_target.data(), stream0.get());
+        device_copy_n_async(h_seed_pairs.data(), get_size(h_seed_pairs), d_seed_pairs.data(), stream0.get());
 
         // Launch the ungapped extender device pointer function
         ungapped_extender->extend_async(d_query.data(),
@@ -174,7 +174,7 @@ int main(int argc, char* argv[])
         const int32_t h_num_ssp = cudautils::get_value_from_device(d_num_ssp.data(), stream0.get());
         h_ssp.resize(h_num_ssp);
         // Copy data asynchronously
-        device_copy_n(d_ssp.data(), h_num_ssp, h_ssp.data(), stream0.get());
+        device_copy_n_async(d_ssp.data(), h_num_ssp, h_ssp.data(), stream0.get());
         cudaStreamSynchronize(stream0.get());
     }
     std::cerr << "Number of Scored Segment Pairs found: " << get_size(h_ssp) << std::endl;
