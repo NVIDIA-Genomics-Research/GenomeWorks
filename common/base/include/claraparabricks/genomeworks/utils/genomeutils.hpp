@@ -143,6 +143,7 @@ inline std::vector<std::string> generate_random_sequences(std::string const& bac
 
 inline void reverse_complement(const char* src, const int32_t length, char* dest)
 {
+    // lookup for substitution: A -> T; C -> G; T -> A; G -> C.
     constexpr char lookup[] = {'T', 'G', 'A', 'C'};
     for (int32_t pos = 0; pos < length; pos++)
     {

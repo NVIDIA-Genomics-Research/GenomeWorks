@@ -772,6 +772,9 @@ myers_compute_scores_edit_dist_banded(
 
 __device__ int32_t get_alignment_task(const int32_t* scheduling_index_d, cuda::atomic<int32_t, cuda::thread_scope_device>* scheduling_atomic_d)
 {
+    // Fetch the index of the next alignment to be processed.
+    // A full warp operates on the same alignment, i.e.
+    // the whole warp gets the same alignment index.
     int32_t sched_idx = 0;
     if (threadIdx.x == 0)
     {

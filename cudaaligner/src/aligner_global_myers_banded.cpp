@@ -294,9 +294,14 @@ StatusType AlignerGlobalMyersBanded::align_all()
     {
         scheduling_index_d.clear_and_resize(n_alignments);
     }
+
+    // Create an index of alignment tasks, which determines the processing
+    // order. Sort this index by the sum of query and target lengths such
+    // that large alignments get processed first.
     scheduling_index_h.resize(n_alignments);
     std::iota(begin(scheduling_index_h), end(scheduling_index_h), 0);
     std::sort(begin(scheduling_index_h), end(scheduling_index_h), [&seq_starts_h](int32_t i, int32_t j) { return seq_starts_h[2 * i + 2] - seq_starts_h[2 * i] > seq_starts_h[2 * j + 2] - seq_starts_h[2 * j]; });
+
     device_copy_n_async(seq_h.data(), seq_starts_h.back(), seq_d.data(), stream_);
     device_copy_n_async(seq_starts_h.data(), 2 * n_alignments + 1, seq_starts_d.data(), stream_);
     device_copy_n_async(scheduling_index_h.data(), n_alignments, scheduling_index_d.data(), stream_);
