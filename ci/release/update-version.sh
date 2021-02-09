@@ -24,36 +24,36 @@
 
 set -e
 
-# Grab argument for release type
-RELEASE_TYPE=$1
+# Overwrite argument value to always trigger a patch release
+RELEASE_TYPE="patch"
 
 # Get current version and calculate next versions
-CURRENT_TAG=`git tag | grep -xE 'v[0-9\.]+' | sort --version-sort | tail -n 1 | tr -d 'v'`
+CURRENT_TAG=`git tag | grep -xE "v$(date '+%Y\.%m')\.[0-9]+" | sort --version-sort | tail -n 1 | tr -d 'v'`
+# In case no tag exists for this month
+if [ -z "${CURRENT_TAG}" ]; then
+  CURRENT_TAG="$(date '+%Y.%m').-1"
+fi
 CURRENT_MAJOR=`echo $CURRENT_TAG | awk '{split($0, a, "."); print a[1]}'`
 CURRENT_MINOR=`echo $CURRENT_TAG | awk '{split($0, a, "."); print a[2]}'`
 CURRENT_PATCH=`echo $CURRENT_TAG | awk '{split($0, a, "."); print a[3]}'`
-CURRENT_SHORT_TAG=${CURRENT_MAJOR}.${CURRENT_MINOR}
-NEXT_MAJOR=$((CURRENT_MAJOR + 1))
-NEXT_MINOR=$((CURRENT_MINOR + 1))
 NEXT_PATCH=$((CURRENT_PATCH + 1))
 NEXT_FULL_TAG=""
 NEXT_SHORT_TAG=""
 
-# Determine release type
-if [ "$RELEASE_TYPE" == "major" ]; then
-  NEXT_FULL_TAG="${NEXT_MAJOR}.0.0"
-  NEXT_SHORT_TAG="${NEXT_MAJOR}.0"
-elif [ "$RELEASE_TYPE" == "minor" ]; then
-  NEXT_FULL_TAG="${CURRENT_MAJOR}.${NEXT_MINOR}.0"
-  NEXT_SHORT_TAG="${CURRENT_MAJOR}.${NEXT_MINOR}"
-elif [ "$RELEASE_TYPE" == "patch" ]; then
+if [ "$RELEASE_TYPE" == "patch" ]; then
   NEXT_FULL_TAG="${CURRENT_MAJOR}.${CURRENT_MINOR}.${NEXT_PATCH}"
   NEXT_SHORT_TAG="${CURRENT_MAJOR}.${CURRENT_MINOR}"
 else
   echo "Incorrect release type; use 'major', 'minor', or 'patch' as an argument"
   exit 1
 fi
+if [[ "$CURRENT_PATCH" == "-1" ]]; then
+  echo "Preparing release [$NEXT_FULL_TAG]"
+else
+  echo "Preparing release [$CURRENT_TAG -> $NEXT_FULL_TAG]"
+fi
 
-echo "Preparing '$RELEASE_TYPE' release [$CURRENT_TAG -> $NEXT_FULL_TAG]"
+echo "${NEXT_FULL_TAG}" > VERSION
 
-echo ${NEXT_FULL_TAG} > VERSION
+# Set gpuCI auto-releaser shell variable to an empty string
+REL_TYPE=""
