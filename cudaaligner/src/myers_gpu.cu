@@ -49,8 +49,8 @@ constexpr int32_t initial_distance_guess_factor = 20;
 __global__ void init_atomic(cuda::atomic<int32_t, cuda::thread_scope_device>* atomic)
 {
     // Safety-check for work-around for missing cuda::atomic_ref in libcu++ (see further below).
-    static_assert( sizeof(int32_t) == sizeof(cuda::atomic<int32_t, cuda::thread_scope_device>), "cuda::atomic<int32_t> needs to have the same size as int32_t.");
-    static_assert( alignof(int32_t) == alignof(cuda::atomic<int32_t, cuda::thread_scope_device>), "cuda::atomic<int32_t> needs to have the same alignment as int32_t.");
+    static_assert(sizeof(int32_t) == sizeof(cuda::atomic<int32_t, cuda::thread_scope_device>), "cuda::atomic<int32_t> needs to have the same size as int32_t.");
+    static_assert(alignof(int32_t) == alignof(cuda::atomic<int32_t, cuda::thread_scope_device>), "cuda::atomic<int32_t> needs to have the same alignment as int32_t.");
     atomic->store(0, cuda::memory_order_relaxed);
 }
 
@@ -1032,8 +1032,8 @@ void myers_banded_gpu(int8_t* paths_d, int32_t* path_lengths_d, int64_t const* p
     const dim3 blocks(n_alignments, 1, 1);
 
     // Work-around for missing cuda::atomic_ref in libcu++.
-    static_assert( sizeof(int32_t) == sizeof(cuda::atomic<int32_t, cuda::thread_scope_device>), "cuda::atomic<int32_t> needs to have the same size as int32_t.");
-    static_assert( alignof(int32_t) == alignof(cuda::atomic<int32_t, cuda::thread_scope_device>), "cuda::atomic<int32_t> needs to have the same alignment as int32_t.");
+    static_assert(sizeof(int32_t) == sizeof(cuda::atomic<int32_t, cuda::thread_scope_device>), "cuda::atomic<int32_t> needs to have the same size as int32_t.");
+    static_assert(alignof(int32_t) == alignof(cuda::atomic<int32_t, cuda::thread_scope_device>), "cuda::atomic<int32_t> needs to have the same alignment as int32_t.");
     cuda::atomic<int32_t, cuda::thread_scope_device>* const scheduling_atomic_d = reinterpret_cast<cuda::atomic<int32_t, cuda::thread_scope_device>*>(scheduling_atomic_int_d);
 
     myers::init_atomic<<<1, 1, 0, stream>>>(scheduling_atomic_d);
