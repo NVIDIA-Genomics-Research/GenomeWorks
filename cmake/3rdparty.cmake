@@ -42,6 +42,10 @@ add_library(cub INTERFACE IMPORTED)
 #cmake before 3.11, use the following for now:
 set_property(TARGET cub APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${CUB_DIR}")
 
+set(LIBCUDACXX_DIR ${PROJECT_SOURCE_DIR}/3rdparty/libcudacxx CACHE STRING "Path to libcu++ repo.")
+add_library(libcudacxx INTERFACE IMPORTED)
+set_property(TARGET libcudacxx APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${LIBCUDACXX_DIR}/include")
+
 set(KSEQPP_DIR ${PROJECT_SOURCE_DIR}/3rdparty/kseqpp/src CACHE STRING
     "Path to kseqpp repo")
 

@@ -49,7 +49,7 @@ target_include_directories(${MODULE_NAME}_internal INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(${MODULE_NAME} gwbase cub)
+target_link_libraries(${MODULE_NAME} gwbase cub libcudacxx)
 
 if (gw_optimize_for_native_cpu)
     target_compile_options(${MODULE_NAME} PRIVATE -march=native)
@@ -60,8 +60,6 @@ target_include_directories(${MODULE_NAME}
         $<INSTALL_INTERFACE:include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
-
-target_compile_options(${MODULE_NAME} PRIVATE -Werror)
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/README.md)
