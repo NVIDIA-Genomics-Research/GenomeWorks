@@ -29,6 +29,7 @@
 #include <climits>
 #include <vector>
 #include <numeric>
+#include <cuda/atomic>
 
 namespace claraparabricks
 {

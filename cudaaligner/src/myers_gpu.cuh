@@ -19,7 +19,6 @@
 #include "matrix_cpu.hpp"
 #include "batched_device_matrices.cuh"
 
-#include <cuda/atomic>
 #include <cuda_runtime_api.h>
 
 namespace claraparabricks
