@@ -26,17 +26,6 @@ namespace
 {
 
 constexpr int32_t word_size = 32;
-int32_t get_max_sequence_length(std::vector<std::pair<std::string, std::string>> const& inputs)
-{
-    using claraparabricks::genomeworks::get_size;
-    int64_t max_string_size = 0;
-    for (auto const& pair : inputs)
-    {
-        max_string_size = std::max(max_string_size, get_size(pair.first));
-        max_string_size = std::max(max_string_size, get_size(pair.second));
-    }
-    return static_cast<int32_t>(max_string_size);
-}
 
 struct TestCase
 {
@@ -138,8 +127,6 @@ TEST_P(TestApproximateBandedMyers, EditDistanceMonotonicallyDecreasesWithBandWid
     TestCase t = GetParam();
 
     DefaultDeviceAllocator allocator = create_default_device_allocator();
-
-    const int32_t max_string_size = std::max(get_size<int32_t>(t.query), get_size<int32_t>(t.target));
 
     int32_t last_edit_distance      = std::numeric_limits<int32_t>::max();
     int32_t last_bw                 = -1;

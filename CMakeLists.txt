@@ -68,10 +68,10 @@ else()
     set_property(GLOBAL PROPERTY gw_library_type STATIC)
 endif()
 
-include(cmake/CXX.cmake)
 include(cmake/CUDA.cmake)
-include(cmake/Doxygen.cmake)
 include(cmake/3rdparty.cmake)
+include(cmake/CXX.cmake) # Must occur after 3rdparty modules are added
+include(cmake/Doxygen.cmake)
 include(cmake/Tests.cmake)
 include(cmake/Benchmarks.cmake)
 include(cmake/Format.cmake)

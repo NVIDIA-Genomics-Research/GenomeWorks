@@ -47,8 +47,6 @@ static void BM_SingleBatchTest(benchmark::State& state)
 
 static void CustomArguments(benchmark::internal::Benchmark* b)
 {
-    const int32_t min_total_windows = 512;
-    const int32_t max_total_windows = 4096;
     for (int32_t batches = 1; batches <= 16; batches *= 2)
     {
         b->Args({batches});
