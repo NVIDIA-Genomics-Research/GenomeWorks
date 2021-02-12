@@ -33,3 +33,6 @@
 [submodule "3rdparty/htslib"]
 	path = 3rdparty/htslib
 	url = https://github.com/samtools/htslib.git
+[submodule "3rdparty/libcudacxx"]
+	path = 3rdparty/libcudacxx
+	url = https://github.com/NVIDIA/libcudacxx
