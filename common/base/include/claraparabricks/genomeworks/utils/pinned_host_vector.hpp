@@ -17,7 +17,10 @@
 #pragma once
 
 #include <vector>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-qualifiers"
 #include <thrust/system/cuda/experimental/pinned_allocator.h>
+#pragma GCC diagnostic pop
 
 namespace claraparabricks
 {

@@ -14,9 +14,6 @@
 * limitations under the License.
 */
 
-// This is required for the unused parameter error raised by cuda/atomic
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-
 #include "myers_gpu.cuh"
 #include "batched_device_matrices.cuh"
 
@@ -32,7 +29,10 @@
 #include <climits>
 #include <vector>
 #include <numeric>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 #include <cuda/atomic>
+#pragma GCC diagnostic pop
 
 namespace claraparabricks
 {

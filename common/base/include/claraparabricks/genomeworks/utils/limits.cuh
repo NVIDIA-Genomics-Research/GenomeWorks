@@ -26,6 +26,7 @@ namespace claraparabricks
 namespace genomeworks
 {
 #ifdef GW_CUDA_BEFORE_10_1
+#pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wignored-qualifiers"
 template <typename T>
 struct numeric_limits
@@ -45,6 +46,7 @@ struct numeric_limits<int32_t>
     GW_CONSTEXPR static __device__ int32_t max() { return INT32_MAX; }
     GW_CONSTEXPR static __device__ int32_t min() { return INT32_MIN; }
 };
+#pragma GCC diagnostic pop
 #else
 using std::numeric_limits;
 #endif
