@@ -141,6 +141,8 @@ public:
         friend class batched_device_matrices<T>;
     };
 
+    batched_device_matrices() = default;
+
     batched_device_matrices(int64_t max_elements, DefaultDeviceAllocator allocator, cudaStream_t stream)
         : storage_(max_elements, allocator, stream)
         , offsets_(allocator, stream)
@@ -170,8 +172,8 @@ public:
     ~batched_device_matrices() = default;
 
     batched_device_matrices(batched_device_matrices const&) = delete;
+    batched_device_matrices(batched_device_matrices&&)      = default;
     batched_device_matrices& operator=(batched_device_matrices const&) = delete;
-    batched_device_matrices(batched_device_matrices&&)                 = default;
     batched_device_matrices& operator=(batched_device_matrices&&) = default;
 
     device_interface* get_device_interface()
@@ -181,7 +183,8 @@ public:
 
     bool append_matrix(int32_t max_elements)
     {
-        assert(offsets_host_.size() >= 1);
+        if (offsets_host_.empty())
+            return false;
         const ptrdiff_t begin = offsets_host_.back();
         if (begin + max_elements > get_size(storage_))
         {
@@ -193,25 +196,29 @@ public:
 
     int32_t number_of_matrices() const
     {
-        assert(offsets_host_.size() >= 1);
-        return get_size<int32_t>(offsets_host_) - 1;
+        return offsets_host_.empty() ? 0 : get_size<int32_t>(offsets_host_) - 1;
     }
 
     int64_t remaining_free_matrix_elements() const
     {
-        assert(offsets_host_.size() >= 1);
-        return get_size<int64_t>(storage_) - offsets_host_.back();
+        return offsets_host_.empty() ? 0 : get_size<int64_t>(storage_) - offsets_host_.back();
     }
 
     void clear()
     {
+        // If offsets_host_ is empty, the object was default-constructed
+        // and can only serve as placeholder for a following move-assignment
+        // with a non-default-constructed object.
+        if (offsets_host_.empty())
+            return;
         offsets_host_.clear();
         offsets_host_.push_back(0);
     }
 
     void construct_device_matrices_async(cudaStream_t stream)
     {
-        assert(offsets_host_.size() >= 1);
+        if (offsets_host_.empty())
+            return;
         offsets_.clear_and_resize(offsets_host_.size());
         dev_interface_host_.clear();
         dev_interface_host_.emplace_back(storage_.data(), offsets_.data(), get_size<int32_t>(offsets_host_) - 1);
