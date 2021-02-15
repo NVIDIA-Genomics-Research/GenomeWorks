@@ -18,7 +18,7 @@
 
 #include <vector>
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wignored-qualifiers"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 #include <thrust/system/cuda/experimental/pinned_allocator.h>
 #pragma GCC diagnostic pop
 
