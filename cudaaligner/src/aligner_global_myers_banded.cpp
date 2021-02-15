@@ -230,9 +230,6 @@ StatusType AlignerGlobalMyersBanded::add_alignment(const char* query, int32_t qu
         return StatusType::exceeded_max_alignments;
     }
 
-    // TODO handle reverse complements
-    assert(reverse_complement_query == false);
-    assert(reverse_complement_target == false);
     assert(get_size(seq_starts_h) % 2 == 1);
     const int64_t seq_start = seq_starts_h.back();
     genomeutils::copy_sequence(query, query_length, seq_h.data() + seq_start, reverse_complement_query);
