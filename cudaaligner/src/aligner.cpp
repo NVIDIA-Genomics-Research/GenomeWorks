@@ -72,7 +72,7 @@ std::unique_ptr<Aligner> create_aligner(
     return create_aligner(max_query_length, max_target_length, max_alignments, type, allocator, stream, device_id);
 }
 
-std::unique_ptr<Aligner> create_aligner(
+std::unique_ptr<FixedBandAligner> create_aligner(
     const AlignmentType type,
     const int32_t max_bandwidth,
     cudaStream_t stream,
@@ -91,7 +91,7 @@ std::unique_ptr<Aligner> create_aligner(
     }
 }
 
-std::unique_ptr<Aligner> create_aligner(
+std::unique_ptr<FixedBandAligner> create_aligner(
     const AlignmentType type,
     const int32_t max_bandwidth,
     cudaStream_t stream,

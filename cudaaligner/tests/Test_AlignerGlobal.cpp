@@ -212,6 +212,19 @@ TEST(TestCudaAligner, TestAlignmentAddition)
     ASSERT_EQ(5, aligner->num_alignments());
 }
 
+TEST(TestFixedBandAligner, TestResetBandwidth)
+{
+    const int32_t max_bandwidth1              = 2048;
+    const int32_t max_bandwidth2              = 500;
+    DefaultDeviceAllocator allocator          = create_default_device_allocator();
+    std::unique_ptr<FixedBandAligner> aligner = std::make_unique<AlignerGlobalMyersBanded>(-1,
+                                                                                           max_bandwidth1,
+                                                                                           allocator,
+                                                                                           nullptr,
+                                                                                           0);
+    aligner->reset_max_bandwidth(max_bandwidth2);
+}
+
 TEST_P(TestAlignerGlobal, TestAlignmentKernel)
 {
     AlignerTestData param                                          = GetParam();
@@ -314,8 +327,6 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(TestCudaAligner, TestAlignerGlobal, ::testing::ValuesIn(create_aligner_test_cases()));
-
 TEST_P(TestAlignerGlobalImplPerf, TestAlignmentKernelPerf)
 {
     AlignerTestData param                                          = GetParam();
@@ -344,6 +355,7 @@ TEST_P(TestAlignerGlobalImplPerf, TestAlignmentKernelPerf)
     ASSERT_EQ(alignments.size(), inputs.size());
 }
 
+INSTANTIATE_TEST_SUITE_P(TestCudaAligner, TestAlignerGlobal, ::testing::ValuesIn(create_aligner_test_cases()));
 INSTANTIATE_TEST_SUITE_P(TestCudaAligner, TestAlignerGlobalImplPerf, ::testing::ValuesIn(create_aligner_perf_test_cases()));
 } // namespace cudaaligner
 

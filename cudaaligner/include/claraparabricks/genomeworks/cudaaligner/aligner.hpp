@@ -82,6 +82,17 @@ public:
     virtual void reset() = 0;
 };
 
+/// A special CUDA Aligner that works with a fixed band of the Needleman-Wunsch matrix.
+class FixedBandAligner : public Aligner
+{
+public:
+    /// \brief Reset the bandwidth of the Aligner.
+    ///
+    /// Resets all data of the aligner and resets the bandwidth to the given argument.
+    /// \param max_bandwidth The new maximal bandwidth to use for the fixed diagonal band of the Needleman-Wunsch matrix. Is not allowed to be a (multiple of 32) + 1. If such a value is passed it will throw and std::invalid_argument exception.
+    virtual void reset_max_bandwidth(int32_t max_bandwidth) = 0;
+};
+
 /// \brief Created Aligner object - DEPRECATED API
 ///
 /// \param max_query_length Maximum length of query string
@@ -118,7 +129,7 @@ std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_ta
 /// \param max_device_memory Maximum amount of device memory to use from passed in allocator in bytes (-1 for all available memory)
 ///
 /// \return Unique pointer to Aligner object
-std::unique_ptr<Aligner> create_aligner(AlignmentType type, int32_t max_bandwidth, cudaStream_t stream, int32_t device_id, DefaultDeviceAllocator allocator, int64_t max_device_memory);
+std::unique_ptr<FixedBandAligner> create_aligner(AlignmentType type, int32_t max_bandwidth, cudaStream_t stream, int32_t device_id, DefaultDeviceAllocator allocator, int64_t max_device_memory);
 
 /// \brief Created Aligner object
 ///
@@ -129,7 +140,7 @@ std::unique_ptr<Aligner> create_aligner(AlignmentType type, int32_t max_bandwidt
 /// \param max_device_memory Maximum amount of device memory used in bytes (-1 (default) for all available memory).
 ///
 /// \return Unique pointer to Aligner object
-std::unique_ptr<Aligner> create_aligner(AlignmentType type, int32_t max_bandwidth, cudaStream_t stream, int32_t device_id, int64_t max_device_memory = -1);
+std::unique_ptr<FixedBandAligner> create_aligner(AlignmentType type, int32_t max_bandwidth, cudaStream_t stream, int32_t device_id, int64_t max_device_memory = -1);
 /// \}
 } // namespace cudaaligner
 
