@@ -105,7 +105,7 @@ public:
     buffer(buffer&& rhs)
         : data_(std::exchange(rhs.data_, nullptr))
         , size_(std::exchange(rhs.size_, 0))
-        , streams_(rhs.streams_)
+        , streams_(std::exchange(rhs.streams_, {}))
         , allocator_(rhs.allocator_)
     {
     }
@@ -116,9 +116,13 @@ public:
     /// \return refrence to this buffer.
     buffer& operator=(buffer&& rhs)
     {
+        if (nullptr != data_)
+        {
+            allocator_.deallocate(data_, size_);
+        }
         data_      = std::exchange(rhs.data_, nullptr);
         size_      = std::exchange(rhs.size_, 0);
-        streams_   = rhs.streams_;
+        streams_   = std::exchange(rhs.streams_, {});
         allocator_ = rhs.allocator_;
         return *this;
     }
