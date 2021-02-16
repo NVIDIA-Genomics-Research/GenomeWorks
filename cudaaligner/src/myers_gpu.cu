@@ -427,11 +427,12 @@ __global__ void myers_compute_score_matrix_kernel(
     }
 }
 
-__device__ int32_t myers_backtrace_banded(int8_t* path, device_matrix_view<WordType> const& pv, device_matrix_view<WordType> const& mv, device_matrix_view<int32_t> const& score, int32_t diagonal_begin, int32_t diagonal_end, int32_t band_width, int32_t target_size, int32_t query_size)
+__device__ int32_t myers_backtrace_banded(int8_t* path, uint8_t* const path_count, device_matrix_view<WordType> const& pv, device_matrix_view<WordType> const& mv, device_matrix_view<int32_t> const& score, int32_t diagonal_begin, int32_t diagonal_end, int32_t band_width, int32_t target_size, int32_t query_size)
 {
     assert(threadIdx.x == 0);
     using nw_score_t                    = int32_t;
     GW_CONSTEXPR nw_score_t out_of_band = numeric_limits<nw_score_t>::max() - 1; // -1 to avoid integer overflow further down.
+    GW_CONSTEXPR uint8_t r_count_max    = numeric_limits<uint8_t>::max();
     assert(pv.num_rows() == score.num_rows());
     assert(mv.num_rows() == score.num_rows());
     assert(pv.num_cols() == score.num_cols());
@@ -449,6 +450,8 @@ __device__ int32_t myers_backtrace_banded(int8_t* path, device_matrix_view<WordT
     const nw_score_t last_diagonal_score = diagonal_end < 2 ? out_of_band : get_myers_score(1, diagonal_end - 2, pv, mv, score, last_entry_mask) + 2;
     nw_score_t myscore                   = score((i - 1) / word_size, j); // row 0 is implicit, NW matrix is shifted by i -> i-1, i.e. i \in [1,band_width] for get_myers_score. (see get_myers_score)
     int32_t pos                          = 0;
+    int8_t prev_r                        = -1;
+    uint8_t r_count                      = 0;
     while (j >= diagonal_end)
     {
         int8_t r = 0;
@@ -476,8 +479,18 @@ __device__ int32_t myers_backtrace_banded(int8_t* path, device_matrix_view<WordT
             --i;
             --j;
         }
-        path[pos] = r;
-        ++pos;
+        if (prev_r != r || r_count == r_count_max)
+        {
+            if (prev_r != -1)
+            {
+                path[pos]       = prev_r;
+                path_count[pos] = r_count;
+                ++pos;
+            }
+            prev_r  = r;
+            r_count = 0;
+        }
+        ++r_count;
     }
     while (j >= diagonal_begin)
     {
@@ -506,8 +519,18 @@ __device__ int32_t myers_backtrace_banded(int8_t* path, device_matrix_view<WordT
             myscore = diag;
             --j;
         }
-        path[pos] = r;
-        ++pos;
+        if (prev_r != r || r_count == r_count_max)
+        {
+            if (prev_r != -1)
+            {
+                path[pos]       = prev_r;
+                path_count[pos] = r_count;
+                ++pos;
+            }
+            prev_r  = r;
+            r_count = 0;
+        }
+        ++r_count;
     }
     while (i > 0 && j > 0)
     {
@@ -536,20 +559,59 @@ __device__ int32_t myers_backtrace_banded(int8_t* path, device_matrix_view<WordT
             --i;
             --j;
         }
-        path[pos] = r;
-        ++pos;
+        if (prev_r != r || r_count == r_count_max)
+        {
+            if (prev_r != -1)
+            {
+                path[pos]       = prev_r;
+                path_count[pos] = r_count;
+                ++pos;
+            }
+            prev_r  = r;
+            r_count = 0;
+        }
+        ++r_count;
     }
     while (i > 0)
     {
-        path[pos] = static_cast<int8_t>(AlignmentState::deletion);
-        ++pos;
-        --i;
+        if (prev_r != static_cast<int8_t>(AlignmentState::deletion) || r_count == r_count_max)
+        {
+            if (prev_r != -1)
+            {
+                path[pos]       = prev_r;
+                path_count[pos] = r_count;
+                ++pos;
+            }
+            prev_r  = static_cast<int8_t>(AlignmentState::deletion);
+            r_count = 0;
+        }
+        const int32_t decrement = max(i, static_cast<int32_t>(r_count_max) - static_cast<int32_t>(r_count));
+        r_count += static_cast<uint8_t>(decrement);
+        i -= decrement;
     }
     while (j > 0)
     {
-        path[pos] = static_cast<int8_t>(AlignmentState::insertion);
+        if (prev_r != static_cast<int8_t>(AlignmentState::insertion) || r_count == r_count_max)
+        {
+            if (prev_r != -1)
+            {
+                path[pos]       = prev_r;
+                path_count[pos] = r_count;
+                ++pos;
+            }
+            prev_r  = static_cast<int8_t>(AlignmentState::insertion);
+            r_count = 0;
+        }
+        const int32_t decrement = max(j, static_cast<int32_t>(r_count_max) - static_cast<int32_t>(r_count));
+        r_count += static_cast<uint8_t>(decrement);
+        j -= decrement;
+    }
+    if (r_count != 0)
+    {
+        assert(prev_r != -1);
+        path[pos]       = prev_r;
+        path_count[pos] = r_count;
         ++pos;
-        --j;
     }
     return pos;
 }
@@ -794,6 +856,7 @@ __device__ int32_t get_alignment_task(const int32_t* scheduling_index_d, cuda::a
 
 __global__ void myers_banded_kernel(
     int8_t* paths_base,
+    uint8_t* const path_counts_base,
     int32_t* path_lengths,
     int64_t const* path_starts,
     batched_device_matrices<WordType>::device_interface* pvi,
@@ -820,7 +883,6 @@ __global__ void myers_banded_kernel(
     const int32_t query_size  = target - query;
     const int32_t target_size = sequences_d + sequence_starts_d[2 * alignment_idx + 2] - target;
     const int32_t n_words     = ceiling_divide(query_size, word_size);
-    int8_t* path              = paths_base + path_starts[alignment_idx];
     if (max_bandwidth - 1 < abs(target_size - query_size))
     {
         if (threadIdx.x == 0)
@@ -900,9 +962,11 @@ __global__ void myers_banded_kernel(
         int32_t path_length = 0;
         if (band_width != 0)
         {
-            path_length = band_width > 0 ? 1 : -1;
-            band_width  = abs(band_width);
-            path_length *= myers_backtrace_banded(path, pv, mv, score, diagonal_begin, diagonal_end, band_width, target_size, query_size);
+            int8_t* const path         = paths_base + path_starts[alignment_idx];
+            uint8_t* const path_counts = path_counts_base + path_starts[alignment_idx];
+            path_length                = band_width > 0 ? 1 : -1;
+            band_width                 = abs(band_width);
+            path_length *= myers_backtrace_banded(path, path_counts, pv, mv, score, diagonal_begin, diagonal_end, band_width, target_size, query_size);
         }
         path_lengths[alignment_idx] = path_length;
     }
@@ -1015,7 +1079,7 @@ void myers_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length
     GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
-void myers_banded_gpu(int8_t* paths_d, int32_t* path_lengths_d, int64_t const* path_starts_d,
+void myers_banded_gpu(int8_t* paths_d, uint8_t* path_counts_d, int32_t* path_lengths_d, int64_t const* path_starts_d,
                       char const* sequences_d,
                       int64_t const* sequence_starts_d,
                       int32_t const* scheduling_index_d,
@@ -1037,7 +1101,7 @@ void myers_banded_gpu(int8_t* paths_d, int32_t* path_lengths_d, int64_t const* p
     cuda::atomic<int32_t, cuda::thread_scope_device>* const scheduling_atomic_d = reinterpret_cast<cuda::atomic<int32_t, cuda::thread_scope_device>*>(scheduling_atomic_int_d);
 
     myers::init_atomic<<<1, 1, 0, stream>>>(scheduling_atomic_d);
-    myers::myers_banded_kernel<<<blocks, threads, 0, stream>>>(paths_d, path_lengths_d, path_starts_d,
+    myers::myers_banded_kernel<<<blocks, threads, 0, stream>>>(paths_d, path_counts_d, path_lengths_d, path_starts_d,
                                                                pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(),
                                                                sequences_d, sequence_starts_d, scheduling_index_d, scheduling_atomic_d, max_bandwidth, n_alignments);
     GW_CU_CHECK_ERR(cudaPeekAtLastError());

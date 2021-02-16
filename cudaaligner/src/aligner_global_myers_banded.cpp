@@ -56,6 +56,7 @@ struct memory_distribution
 {
     int64_t sequence_memory;
     int64_t results_memory;
+    int64_t result_counts_memory;
     int64_t query_patterns_memory;
     int64_t pmvs_matrix_memory;
     int64_t score_matrix_memory;
@@ -64,7 +65,7 @@ struct memory_distribution
 
 int64_t get_total_memory_required(const memory_distribution& mem)
 {
-    return 2 * mem.sequence_memory + mem.results_memory + mem.query_patterns_memory + 2 * mem.pmvs_matrix_memory + mem.score_matrix_memory + mem.remainder;
+    return 2 * mem.sequence_memory + mem.results_memory + mem.result_counts_memory + mem.query_patterns_memory + 2 * mem.pmvs_matrix_memory + mem.score_matrix_memory + mem.remainder;
 }
 
 memory_distribution split_available_memory(const int64_t max_device_memory, const int32_t max_bandwidth)
@@ -75,17 +76,19 @@ memory_distribution split_available_memory(const int64_t max_device_memory, cons
     // Memory requirements per alignment per base pair
     const float mem_req_sequence       = sizeof(char);
     const float mem_req_results        = 2 * sizeof(char);
+    const float mem_req_result_counts  = 2 * sizeof(uint8_t);
     const float mem_req_query_patterns = 4.f / word_size;
     const float mem_req_pmvs_matrix    = (sizeof(WordType) * static_cast<float>(max_bandwidth)) / word_size;
     const float mem_req_score_matrix   = (sizeof(int32_t) * static_cast<float>(max_bandwidth)) / word_size;
 
-    const float mem_req_total_per_bp = 2 * mem_req_sequence + mem_req_results + mem_req_query_patterns + 2 * mem_req_pmvs_matrix + mem_req_score_matrix;
+    const float mem_req_total_per_bp = 2 * mem_req_sequence + mem_req_results + mem_req_result_counts + mem_req_query_patterns + 2 * mem_req_pmvs_matrix + mem_req_score_matrix;
 
     const float fmax_device_memory = static_cast<float>(max_device_memory) * 0.95f; // reserve 5% for misc
 
     memory_distribution r;
     r.sequence_memory       = static_cast<int64_t>(fmax_device_memory / mem_req_total_per_bp * mem_req_sequence);
     r.results_memory        = static_cast<int64_t>(fmax_device_memory / mem_req_total_per_bp * mem_req_results);
+    r.result_counts_memory  = static_cast<int64_t>(fmax_device_memory / mem_req_total_per_bp * mem_req_result_counts);
     r.query_patterns_memory = static_cast<int64_t>(fmax_device_memory / mem_req_total_per_bp * mem_req_query_patterns);
     r.pmvs_matrix_memory    = static_cast<int64_t>(fmax_device_memory / mem_req_total_per_bp * mem_req_pmvs_matrix);
     r.score_matrix_memory   = static_cast<int64_t>(fmax_device_memory / mem_req_total_per_bp * mem_req_score_matrix);
@@ -106,14 +109,17 @@ struct AlignerGlobalMyersBanded::InternalData
         , scheduling_index_d(0, allocator, stream)
         , scheduling_atomic_d(0, allocator, stream)
         , results_d(0, allocator, stream)
+        , result_counts_d(0, allocator, stream)
         , result_starts_d(0, allocator, stream)
         , result_lengths_d(0, allocator, stream)
     {
     }
+
     pinned_host_vector<char> seq_h;
     pinned_host_vector<int64_t> seq_starts_h;
     pinned_host_vector<int32_t> scheduling_index_h;
     pinned_host_vector<int8_t> results_h;
+    pinned_host_vector<uint8_t> result_counts_h;
     pinned_host_vector<int32_t> result_lengths_h;
     pinned_host_vector<int64_t> result_starts_h;
     device_buffer<char> seq_d;
@@ -121,6 +127,7 @@ struct AlignerGlobalMyersBanded::InternalData
     device_buffer<int32_t> scheduling_index_d;
     device_buffer<int32_t> scheduling_atomic_d;
     device_buffer<int8_t> results_d;
+    device_buffer<uint8_t> result_counts_d;
     device_buffer<int64_t> result_starts_d;
     device_buffer<int32_t> result_lengths_d;
     batched_device_matrices<WordType> pvs;
@@ -138,10 +145,12 @@ void AlignerGlobalMyersBanded::reallocate_internal_data(InternalData* const data
     data->seq_starts_h.clear();
     data->scheduling_index_h.clear();
     data->results_h.clear();
+    data->result_counts_h.clear();
     data->result_lengths_h.clear();
     data->result_starts_h.clear();
 
     data->results_h.resize(mem.results_memory / sizeof(char));
+    data->result_counts_h.resize(mem.result_counts_memory / sizeof(uint8_t));
     data->seq_h.resize(2 * mem.sequence_memory / sizeof(char));
 
     data->seq_starts_h.reserve(2 * n_alignments_initial + 1);
@@ -154,6 +163,7 @@ void AlignerGlobalMyersBanded::reallocate_internal_data(InternalData* const data
     data->scheduling_index_d.free();
     data->scheduling_atomic_d.free();
     data->results_d.free();
+    data->result_counts_d.free();
     data->result_starts_d.free();
     data->result_lengths_d.free();
     data->pvs = batched_device_matrices<WordType>();
@@ -176,6 +186,7 @@ void AlignerGlobalMyersBanded::reallocate_internal_data(InternalData* const data
     data->scheduling_index_d.clear_and_resize(n_alignments_initial);
     data->scheduling_atomic_d.clear_and_resize(1);
     data->results_d.clear_and_resize(mem.results_memory / sizeof(char));
+    data->result_counts_d.clear_and_resize(mem.result_counts_memory / sizeof(uint8_t));
     data->result_starts_d.clear_and_resize(n_alignments_initial + 1);
     data->result_lengths_d.clear_and_resize(n_alignments_initial);
     data->pvs            = batched_device_matrices<WordType>(mem.pmvs_matrix_memory / sizeof(WordType), allocator, stream);
@@ -222,6 +233,7 @@ StatusType AlignerGlobalMyersBanded::add_alignment(const char* query, int32_t qu
     assert(!result_starts_h.empty());
     assert(get_size(seq_h) == get_size(data_->seq_d));
     assert(get_size(data_->results_h) == get_size(data_->results_d));
+    assert(get_size(data_->result_counts_h) == get_size(data_->result_counts_d));
 
     assert(pvs.remaining_free_matrix_elements() == scores.remaining_free_matrix_elements());
     assert(mvs.remaining_free_matrix_elements() == scores.remaining_free_matrix_elements());
@@ -299,6 +311,7 @@ StatusType AlignerGlobalMyersBanded::align_all()
     const auto& seq_starts_h    = data_->seq_starts_h;
     auto& scheduling_index_h    = data_->scheduling_index_h;
     auto& results_h             = data_->results_h;
+    auto& result_counts_h       = data_->result_counts_h;
     auto& result_lengths_h      = data_->result_lengths_h;
     const auto& result_starts_h = data_->result_starts_h;
 
@@ -306,6 +319,7 @@ StatusType AlignerGlobalMyersBanded::align_all()
     auto& seq_starts_d       = data_->seq_starts_d;
     auto& scheduling_index_d = data_->scheduling_index_d;
     auto& results_d          = data_->results_d;
+    auto& result_counts_d    = data_->result_counts_d;
     auto& result_starts_d    = data_->result_starts_d;
     auto& result_lengths_d   = data_->result_lengths_d;
 
@@ -340,7 +354,7 @@ StatusType AlignerGlobalMyersBanded::align_all()
     device_copy_n_async(scheduling_index_h.data(), n_alignments, scheduling_index_d.data(), stream_);
     device_copy_n_async(result_starts_h.data(), n_alignments + 1, result_starts_d.data(), stream_);
 
-    myers_banded_gpu(results_d.data(), result_lengths_d.data(), result_starts_d.data(),
+    myers_banded_gpu(results_d.data(), result_counts_d.data(), result_lengths_d.data(), result_starts_d.data(),
                      seq_d.data(), seq_starts_d.data(), scheduling_index_d.data(), data_->scheduling_atomic_d.data(), n_alignments, max_bandwidth_,
                      data_->pvs, data_->mvs, data_->scores, data_->query_patterns,
                      stream_);
@@ -349,6 +363,7 @@ StatusType AlignerGlobalMyersBanded::align_all()
     result_lengths_h.resize(n_alignments);
 
     device_copy_n_async(results_d.data(), result_starts_h.back(), results_h.data(), stream_);
+    device_copy_n_async(result_counts_d.data(), result_starts_h.back(), result_counts_h.data(), stream_);
     device_copy_n_async(result_lengths_d.data(), n_alignments, result_lengths_h.data(), stream_);
 
     return StatusType::success;
@@ -362,19 +377,19 @@ StatusType AlignerGlobalMyersBanded::sync_alignments()
 
     GW_NVTX_RANGE(profiler_post, "AlignerGlobalMyersBanded::post-sync");
     const int32_t n_alignments = get_size<int32_t>(alignments_);
-    std::vector<AlignmentState> al_state;
     for (int32_t i = 0; i < n_alignments; ++i)
     {
-        al_state.clear();
-        const int8_t* r_begin = data_->results_h.data() + data_->result_starts_h[i];
-        const int8_t* r_end   = r_begin + std::abs(data_->result_lengths_h[i]);
-        std::transform(r_begin, r_end, std::back_inserter(al_state), [](int8_t x) { return static_cast<AlignmentState>(x); });
-        std::reverse(begin(al_state), end(al_state));
-        if (!al_state.empty() || (alignments_[i]->get_query_sequence().empty() && alignments_[i]->get_target_sequence().empty()))
+        const int8_t* r_begin         = data_->results_h.data() + data_->result_starts_h[i];
+        const int8_t* r_end           = r_begin + std::abs(data_->result_lengths_h[i]);
+        const uint8_t* r_counts_begin = data_->result_counts_h.data() + data_->result_starts_h[i];
+        const uint8_t* r_counts_end   = r_counts_begin + std::abs(data_->result_lengths_h[i]);
+        assert(std::distance(r_begin, r_end) == std::distance(r_counts_begin, r_counts_end));
+
+        if (r_begin != r_end || (alignments_[i]->get_query_sequence().empty() && alignments_[i]->get_target_sequence().empty()))
         {
             AlignmentImpl* alignment = dynamic_cast<AlignmentImpl*>(alignments_[i].get());
             const bool is_optimal    = (data_->result_lengths_h[i] >= 0);
-            alignment->set_alignment(al_state, is_optimal);
+            alignment->set_alignment({std::make_reverse_iterator(r_end), std::make_reverse_iterator(r_begin)}, {std::make_reverse_iterator(r_counts_end), std::make_reverse_iterator(r_counts_begin)}, is_optimal);
             alignment->set_status(StatusType::success);
         }
     }

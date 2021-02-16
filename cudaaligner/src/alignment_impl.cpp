@@ -31,7 +31,7 @@ namespace cudaaligner
 namespace
 {
 
-char alignment_state_to_cigar_state(AlignmentState s)
+char alignment_state_to_cigar_state(const int8_t s)
 {
     // CIGAR string format from http://bioinformatics.cvr.ac.uk/blog/tag/cigar-string/
     // Implementing a reduced set of CIGAR states, covering only the M, D and I characters.
@@ -45,7 +45,7 @@ char alignment_state_to_cigar_state(AlignmentState s)
     }
 }
 
-char alignment_state_to_cigar_state_extended(AlignmentState s)
+char alignment_state_to_cigar_state_extended(const int8_t s)
 {
     // CIGAR string format from http://bioinformatics.cvr.ac.uk/blog/tag/cigar-string/
     // Implementing the set of CIGAR states with =, X, D and I characters,
@@ -58,6 +58,73 @@ char alignment_state_to_cigar_state_extended(AlignmentState s)
     case AlignmentState::deletion: return 'D';
     default: assert(false); return '!';
     }
+}
+
+// Fills the buffer with a decimal representation of x.
+//
+// The buffer has to be std::numeric_limits<int32_t>::digits10 long.
+// x has to be non-negative.
+// It will always fill the buffer up to std::numeric_limits<int32_t>::digits10
+// The number will be padded with 0s at the beginning of the buffer.
+// Returns where in the array the non-zero digits start.
+template <int32_t N>
+int32_t append_number(char (&buffer)[N], int32_t x)
+{
+    constexpr int32_t max_digits = std::numeric_limits<int32_t>::digits10;
+    static_assert(N == max_digits, "This function expects a buffer of size max_digits.");
+    assert(x >= 0);
+    std::fill_n(buffer, 0, max_digits);
+    for (int32_t i = max_digits - 1; i >= 0; --i)
+    {
+        const int32_t y = x / 10;
+        const int32_t z = x % 10;
+        buffer[i]       = '0' + z;
+        x               = y;
+        if (x == 0)
+            return i;
+    }
+    return 0;
+}
+
+void append_to_cigar(std::string& cigar, const int32_t runlength, const char c)
+{
+    constexpr int32_t max_digits = std::numeric_limits<int32_t>::digits10;
+    char buffer[max_digits];
+    const int32_t number_start = append_number(buffer, runlength);
+    cigar.append(buffer + number_start, max_digits - number_start);
+    cigar.append(1, c);
+}
+
+template <typename CigarConversionFunction>
+std::string convert_to_cigar_impl(const std::vector<int8_t>& action, const std::vector<uint8_t>& runlength, CigarConversionFunction convert_to_cigar)
+{
+    std::string cigar;
+    const int32_t length = get_size<int32_t>(action);
+
+    if (length < 1)
+    {
+        return cigar;
+    }
+    cigar.reserve(3 * length); // I guess on average we'll get 2-digit run-lengths and 1 char for an action entry.
+
+    char last_cigar_state    = convert_to_cigar(action[0]);
+    int32_t count_last_state = runlength[0];
+    for (int32_t i = 1; i < length; ++i)
+    {
+        const char cigar_state = convert_to_cigar(action[i]);
+        if (cigar_state == last_cigar_state)
+        {
+            count_last_state += runlength[i];
+        }
+        else
+        {
+            append_to_cigar(cigar, count_last_state, last_cigar_state);
+            last_cigar_state = cigar_state;
+            count_last_state = runlength[i];
+        }
+    }
+    append_to_cigar(cigar, count_last_state, last_cigar_state);
+    return cigar;
 }
 
 template <typename CigarConversionFunction>
@@ -106,13 +173,38 @@ AlignmentImpl::AlignmentImpl(const char* const query, const int32_t query_length
 std::string AlignmentImpl::convert_to_cigar(const CigarFormat format) const
 {
     if (format == CigarFormat::extended)
+    {
+        if (!action_.empty())
+        {
+            return convert_to_cigar_impl(action_, runlength_, alignment_state_to_cigar_state_extended);
+        }
         return convert_to_cigar_impl(alignment_, alignment_state_to_cigar_state_extended);
+    }
     else
+    {
+        if (!action_.empty())
+        {
+            return convert_to_cigar_impl(action_, runlength_, alignment_state_to_cigar_state);
+        }
         return convert_to_cigar_impl(alignment_, alignment_state_to_cigar_state);
+    }
 }
 
 int32_t AlignmentImpl::get_edit_distance() const
 {
+    if (!action_.empty())
+    {
+        const int32_t length  = get_size<int32_t>(action_);
+        int32_t edit_distance = 0;
+        for (int32_t i = 0; i < length; ++i)
+        {
+            if (action_[i] != static_cast<int8_t>(AlignmentState::match))
+            {
+                edit_distance += runlength_[i];
+            }
+        }
+        return edit_distance;
+    }
     return std::count_if(begin(alignment_), end(alignment_), [](AlignmentState s) { return s != AlignmentState::match; });
 }
 
