@@ -82,6 +82,17 @@ public:
     virtual void reset() = 0;
 };
 
+/// A special CUDA Aligner that works with a fixed band of the Needleman-Wunsch matrix.
+class FixedBandAligner : public Aligner
+{
+public:
+    /// \brief Reset the bandwidth of the Aligner.
+    ///
+    /// Resets all data of the aligner and resets the bandwidth to the given argument.
+    /// \param max_bandwidth The new maximal bandwidth to use for the fixed diagonal band of the Needleman-Wunsch matrix. Is not allowed to be a (multiple of 32) + 1. If such a value is passed it will throw and std::invalid_argument exception.
+    virtual void reset_max_bandwidth(int32_t max_bandwidth) = 0;
+};
+
 /// \brief Created Aligner object - DEPRECATED API
 ///
 /// \param max_query_length Maximum length of query string
@@ -108,7 +119,7 @@ std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_ta
 /// \return Unique pointer to Aligner object
 std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_target_length, int32_t max_alignments, AlignmentType type, cudaStream_t stream, int32_t device_id, int64_t max_device_memory_allocator_caching_size = -1);
 
-/// \brief Created Aligner object
+/// \brief Created FixedBandAligner object
 ///
 /// \param type Type of aligner to construct
 /// \param max_bandwidth Maximum bandwidth for the Ukkonen band
@@ -117,10 +128,10 @@ std::unique_ptr<Aligner> create_aligner(int32_t max_query_length, int32_t max_ta
 /// \param allocator Allocator to use for internal device memory allocations
 /// \param max_device_memory Maximum amount of device memory to use from passed in allocator in bytes (-1 for all available memory)
 ///
-/// \return Unique pointer to Aligner object
-std::unique_ptr<Aligner> create_aligner(AlignmentType type, int32_t max_bandwidth, cudaStream_t stream, int32_t device_id, DefaultDeviceAllocator allocator, int64_t max_device_memory);
+/// \return Unique pointer to FixedBandAligner object
+std::unique_ptr<FixedBandAligner> create_aligner(AlignmentType type, int32_t max_bandwidth, cudaStream_t stream, int32_t device_id, DefaultDeviceAllocator allocator, int64_t max_device_memory);
 
-/// \brief Created Aligner object
+/// \brief Created FixedBandAligner object
 ///
 /// \param type Type of aligner to construct
 /// \param max_bandwidth Maximum bandwidth for the Ukkonen band
@@ -128,8 +139,8 @@ std::unique_ptr<Aligner> create_aligner(AlignmentType type, int32_t max_bandwidt
 /// \param device_id GPU device ID to run all CUDA operations on
 /// \param max_device_memory Maximum amount of device memory used in bytes (-1 (default) for all available memory).
 ///
-/// \return Unique pointer to Aligner object
-std::unique_ptr<Aligner> create_aligner(AlignmentType type, int32_t max_bandwidth, cudaStream_t stream, int32_t device_id, int64_t max_device_memory = -1);
+/// \return Unique pointer to FixedBandAligner object
+std::unique_ptr<FixedBandAligner> create_aligner(AlignmentType type, int32_t max_bandwidth, cudaStream_t stream, int32_t device_id, int64_t max_device_memory = -1);
 /// \}
 } // namespace cudaaligner
 

@@ -62,6 +62,11 @@ struct memory_distribution
     int64_t remainder;
 };
 
+int64_t get_total_memory_required(const memory_distribution& mem)
+{
+    return 2 * mem.sequence_memory + mem.results_memory + mem.query_patterns_memory + 2 * mem.pmvs_matrix_memory + mem.score_matrix_memory + mem.remainder;
+}
+
 memory_distribution split_available_memory(const int64_t max_device_memory, const int32_t max_bandwidth)
 {
     assert(max_device_memory >= 0);
@@ -84,7 +89,10 @@ memory_distribution split_available_memory(const int64_t max_device_memory, cons
     r.query_patterns_memory = static_cast<int64_t>(fmax_device_memory / mem_req_total_per_bp * mem_req_query_patterns);
     r.pmvs_matrix_memory    = static_cast<int64_t>(fmax_device_memory / mem_req_total_per_bp * mem_req_pmvs_matrix);
     r.score_matrix_memory   = static_cast<int64_t>(fmax_device_memory / mem_req_total_per_bp * mem_req_score_matrix);
-    r.remainder             = max_device_memory - (2 * r.sequence_memory + r.results_memory + r.query_patterns_memory + 2 * r.pmvs_matrix_memory + r.score_matrix_memory);
+    r.remainder             = 0;
+    // Compute the required memory for this distribution (remainder=0) and
+    // and then compute the remainder with respect to max_device_memory:
+    r.remainder = max_device_memory - get_total_memory_required(r);
     return r;
 }
 
@@ -148,10 +156,16 @@ void AlignerGlobalMyersBanded::reallocate_internal_data(InternalData* data, cons
     data->results_d.free();
     data->result_starts_d.free();
     data->result_lengths_d.free();
-    data->pvs            = batched_device_matrices<WordType>(0, allocator, stream);
-    data->mvs            = batched_device_matrices<WordType>(0, allocator, stream);
-    data->scores         = batched_device_matrices<int32_t>(0, allocator, stream);
-    data->query_patterns = batched_device_matrices<WordType>(0, allocator, stream);
+    data->pvs            = batched_device_matrices<WordType>();
+    data->mvs            = batched_device_matrices<WordType>();
+    data->scores         = batched_device_matrices<int32_t>();
+    data->query_patterns = batched_device_matrices<WordType>();
+
+    int64_t max_available_memory = allocator.get_size_of_largest_free_memory_block();
+    if (max_available_memory < get_total_memory_required(mem))
+    {
+        throw std::runtime_error("Not enough contiguous device memory in device allocator.");
+    }
 
     data->seq_d.clear_and_resize(2 * mem.sequence_memory / sizeof(char));
     data->seq_starts_d.clear_and_resize(2 * n_alignments_initial + 1);
@@ -176,7 +190,7 @@ AlignerGlobalMyersBanded::AlignerGlobalMyersBanded(int64_t max_device_memory, in
 {
     scoped_device_switch dev(device_id);
     data_ = std::make_unique<AlignerGlobalMyersBanded::InternalData>(allocator, stream);
-    AlignerGlobalMyersBanded::reset_bandwidth(max_bandwidth);
+    AlignerGlobalMyersBanded::reset_max_bandwidth(max_bandwidth);
 }
 
 AlignerGlobalMyersBanded::~AlignerGlobalMyersBanded()
@@ -230,9 +244,6 @@ StatusType AlignerGlobalMyersBanded::add_alignment(const char* query, int32_t qu
         return StatusType::exceeded_max_alignments;
     }
 
-    // TODO handle reverse complements
-    assert(reverse_complement_query == false);
-    assert(reverse_complement_target == false);
     assert(get_size(seq_starts_h) % 2 == 1);
     const int64_t seq_start = seq_starts_h.back();
     genomeutils::copy_sequence(query, query_length, seq_h.data() + seq_start, reverse_complement_query);
@@ -375,7 +386,7 @@ void AlignerGlobalMyersBanded::reset()
     alignments_.clear();
 }
 
-void AlignerGlobalMyersBanded::reset_bandwidth(const int32_t max_bandwidth)
+void AlignerGlobalMyersBanded::reset_max_bandwidth(const int32_t max_bandwidth)
 {
     assert(max_device_memory_ >= 0);
     throw_on_negative(max_bandwidth, "max_bandwidth cannot be negative.");
