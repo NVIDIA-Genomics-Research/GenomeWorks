@@ -90,7 +90,9 @@ memory_distribution split_available_memory(const int64_t max_device_memory, cons
     r.pmvs_matrix_memory    = static_cast<int64_t>(fmax_device_memory / mem_req_total_per_bp * mem_req_pmvs_matrix);
     r.score_matrix_memory   = static_cast<int64_t>(fmax_device_memory / mem_req_total_per_bp * mem_req_score_matrix);
     r.remainder             = 0;
-    r.remainder             = max_device_memory - get_total_memory_required(r);
+    // Compute the required memory for this distribution (remainder=0) and
+    // and then compute the remainder with respect to max_device_memory:
+    r.remainder = max_device_memory - get_total_memory_required(r);
     return r;
 }
 
