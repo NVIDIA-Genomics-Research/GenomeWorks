@@ -175,7 +175,10 @@ void AlignerGlobalMyersBanded::reallocate_internal_data(InternalData* const data
     data->query_patterns = batched_device_matrices<WordType>();
     data->query_patterns.reserve_n_matrices(n_alignments_initial);
 
-    int64_t max_available_memory = allocator.get_size_of_largest_free_memory_block();
+    // In a single-threaded code the following exception should never trigger,
+    // because we just freed max_device_memory bytes and the new memory
+    // requirement will be max_device_memory bytes again.
+    const int64_t max_available_memory = allocator.get_size_of_largest_free_memory_block();
     if (max_available_memory < get_total_memory_required(mem))
     {
         throw std::runtime_error("Not enough contiguous device memory in device allocator.");
