@@ -397,6 +397,7 @@ void AlignerGlobalMyersBanded::reset_max_bandwidth(const int32_t max_bandwidth)
     scoped_device_switch dev(device_id_);
     reallocate_internal_data(data_.get(), max_device_memory_, max_bandwidth, n_alignments_initial_parameter, stream_);
     reset();
+    max_bandwidth_ = max_bandwidth;
 }
 
 void AlignerGlobalMyersBanded::reset_data()
