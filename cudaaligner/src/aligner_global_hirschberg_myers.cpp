@@ -54,7 +54,7 @@ AlignerGlobalHirschbergMyers::AlignerGlobalHirschbergMyers(int32_t max_query_len
     : AlignerGlobal(max_query_length, max_target_length, max_alignments, allocator, stream, device_id)
 {
     scoped_device_switch dev(device_id);
-    workspace_ = std::make_unique<Workspace>(max_alignments, ceiling_divide<int32_t>(max_query_length, sizeof(hirschbergmyers::WordType)), max_target_length, hirschberg_myers_switch_to_myers_size, allocator, stream);
+    workspace_ = std::make_unique<Workspace>(max_alignments, ceiling_divide<int32_t>(max_query_length, CHAR_BIT * sizeof(hirschbergmyers::WordType)), max_target_length, hirschberg_myers_switch_to_myers_size, allocator, stream);
 }
 
 AlignerGlobalHirschbergMyers::~AlignerGlobalHirschbergMyers()
