@@ -58,7 +58,7 @@ std::unique_ptr<Batch> initialize_batch(bool msa, const BatchConfig& batch_size)
                                                 mismatch_score,
                                                 match_score);
 
-    return std::move(batch);
+    return batch;
 }
 
 void process_batch(Batch* batch, bool msa_flag, bool print, std::vector<int32_t>& list_of_group_ids, int id_offset)

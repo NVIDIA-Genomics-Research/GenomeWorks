@@ -33,6 +33,7 @@ std::unique_ptr<Aligner> create_aligner(
     int32_t max_alignments, AlignmentType type,
     DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id)
 {
+    GW_NVTX_RANGE(profiler, "create_aligner");
     if (type == AlignmentType::global_alignment)
     {
         return std::make_unique<AlignerGlobalHirschbergMyers>(max_query_length, max_target_length, max_alignments, allocator, stream, device_id);
@@ -48,6 +49,7 @@ std::unique_ptr<Aligner> create_aligner(
     int32_t max_alignments, AlignmentType type,
     cudaStream_t stream, int32_t device_id, int64_t max_device_memory_allocator_caching_size)
 {
+    GW_NVTX_RANGE(profiler, "create_aligner");
     if (max_device_memory_allocator_caching_size < -1)
     {
         throw std::invalid_argument("max_device_memory_allocator_caching_size has to be either -1 (=all available GPU memory) or greater or equal than 0.");
@@ -70,7 +72,7 @@ std::unique_ptr<Aligner> create_aligner(
     return create_aligner(max_query_length, max_target_length, max_alignments, type, allocator, stream, device_id);
 }
 
-std::unique_ptr<Aligner> create_aligner(
+std::unique_ptr<FixedBandAligner> create_aligner(
     const AlignmentType type,
     const int32_t max_bandwidth,
     cudaStream_t stream,
@@ -78,6 +80,7 @@ std::unique_ptr<Aligner> create_aligner(
     DefaultDeviceAllocator allocator,
     const int64_t max_device_memory)
 {
+    GW_NVTX_RANGE(profiler, "create_aligner");
     if (type == AlignmentType::global_alignment)
     {
         return std::make_unique<AlignerGlobalMyersBanded>(max_device_memory, max_bandwidth, allocator, stream, device_id);
@@ -88,13 +91,14 @@ std::unique_ptr<Aligner> create_aligner(
     }
 }
 
-std::unique_ptr<Aligner> create_aligner(
+std::unique_ptr<FixedBandAligner> create_aligner(
     const AlignmentType type,
     const int32_t max_bandwidth,
     cudaStream_t stream,
     const int32_t device_id,
     int64_t max_device_memory)
 {
+    GW_NVTX_RANGE(profiler, "create_aligner");
     if (max_device_memory < -1)
     {
         throw std::invalid_argument("max_device_memory has to be either -1 (=all available GPU memory) or greater or equal than 0.");

@@ -41,6 +41,7 @@ public:
                    std::vector<uint8_t> read, std::vector<int8_t> base_weights, std::vector<int16_t> alignment_graph, std::vector<int16_t> alignment_read)
         : graph(nodes, outgoing_edges, node_alignments, node_coverage_counts)
         , read_(read)
+        , base_weights_(base_weights)
         , alignment_graph_(alignment_graph)
         , alignment_read_(alignment_read)
     {

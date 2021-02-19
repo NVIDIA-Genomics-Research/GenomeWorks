@@ -27,7 +27,7 @@ namespace genomeworks
 namespace cudaaligner
 {
 
-class AlignerGlobalMyersBanded : public Aligner
+class AlignerGlobalMyersBanded : public FixedBandAligner
 {
 public:
     AlignerGlobalMyersBanded(int64_t max_device_memory, int32_t max_bandwidth, DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id);
@@ -44,15 +44,20 @@ public:
         return alignments_;
     }
 
+    void reset_max_bandwidth(int32_t max_bandwidth) override;
+
 private:
+    struct InternalData;
+
+    static void reallocate_internal_data(InternalData* data, int64_t max_device_memory, int32_t max_bandwidth, int32_t n_alignments_initial, cudaStream_t stream);
     void reset_data();
 
-    struct InternalData;
     std::unique_ptr<InternalData> data_;
     cudaStream_t stream_;
     int32_t device_id_;
     int32_t max_bandwidth_;
     std::vector<std::shared_ptr<Alignment>> alignments_;
+    int64_t max_device_memory_;
 };
 
 } // namespace cudaaligner

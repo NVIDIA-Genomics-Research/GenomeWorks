@@ -62,6 +62,11 @@ struct memory_distribution
     int64_t remainder;
 };
 
+int64_t get_total_memory_required(const memory_distribution& mem)
+{
+    return 2 * mem.sequence_memory + mem.results_memory + mem.query_patterns_memory + 2 * mem.pmvs_matrix_memory + mem.score_matrix_memory + mem.remainder;
+}
+
 memory_distribution split_available_memory(const int64_t max_device_memory, const int32_t max_bandwidth)
 {
     assert(max_device_memory >= 0);
@@ -84,7 +89,10 @@ memory_distribution split_available_memory(const int64_t max_device_memory, cons
     r.query_patterns_memory = static_cast<int64_t>(fmax_device_memory / mem_req_total_per_bp * mem_req_query_patterns);
     r.pmvs_matrix_memory    = static_cast<int64_t>(fmax_device_memory / mem_req_total_per_bp * mem_req_pmvs_matrix);
     r.score_matrix_memory   = static_cast<int64_t>(fmax_device_memory / mem_req_total_per_bp * mem_req_score_matrix);
-    r.remainder             = max_device_memory - (2 * r.sequence_memory + r.results_memory + r.query_patterns_memory + 2 * r.pmvs_matrix_memory + r.score_matrix_memory);
+    r.remainder             = 0;
+    // Compute the required memory for this distribution (remainder=0) and
+    // and then compute the remainder with respect to max_device_memory:
+    r.remainder = max_device_memory - get_total_memory_required(r);
     return r;
 }
 
@@ -92,34 +100,26 @@ memory_distribution split_available_memory(const int64_t max_device_memory, cons
 
 struct AlignerGlobalMyersBanded::InternalData
 {
-    InternalData(const memory_distribution mem, const int32_t n_alignments_initial, const DefaultDeviceAllocator& allocator, cudaStream_t stream)
-        : seq_h(2 * mem.sequence_memory / sizeof(char))
-        , seq_starts_h()
-        , results_h(mem.results_memory / sizeof(char))
-        , result_lengths_h()
-        , result_starts_h()
-        , seq_d(2 * mem.sequence_memory / sizeof(char), allocator, stream)
-        , seq_starts_d(2 * n_alignments_initial + 1, allocator, stream)
-        , results_d(mem.results_memory / sizeof(char), allocator, stream)
-        , result_starts_d(n_alignments_initial + 1, allocator, stream)
-        , result_lengths_d(n_alignments_initial, allocator, stream)
-        , pvs(mem.pmvs_matrix_memory / sizeof(WordType), allocator, stream)
-        , mvs(mem.pmvs_matrix_memory / sizeof(WordType), allocator, stream)
-        , scores(mem.score_matrix_memory / sizeof(int32_t), allocator, stream)
-        , query_patterns(mem.query_patterns_memory / sizeof(WordType), allocator, stream)
+    InternalData(const DefaultDeviceAllocator& allocator, cudaStream_t stream)
+        : seq_d(0, allocator, stream)
+        , seq_starts_d(0, allocator, stream)
+        , scheduling_index_d(0, allocator, stream)
+        , scheduling_atomic_d(0, allocator, stream)
+        , results_d(0, allocator, stream)
+        , result_starts_d(0, allocator, stream)
+        , result_lengths_d(0, allocator, stream)
     {
-        seq_starts_h.reserve(2 * n_alignments_initial + 1);
-        result_starts_h.reserve(n_alignments_initial + 1);
-        result_lengths_h.reserve(n_alignments_initial);
     }
-
     pinned_host_vector<char> seq_h;
     pinned_host_vector<int64_t> seq_starts_h;
+    pinned_host_vector<int32_t> scheduling_index_h;
     pinned_host_vector<int8_t> results_h;
     pinned_host_vector<int32_t> result_lengths_h;
     pinned_host_vector<int64_t> result_starts_h;
     device_buffer<char> seq_d;
     device_buffer<int64_t> seq_starts_d;
+    device_buffer<int32_t> scheduling_index_d;
+    device_buffer<int32_t> scheduling_atomic_d;
     device_buffer<int8_t> results_d;
     device_buffer<int64_t> result_starts_d;
     device_buffer<int32_t> result_lengths_d;
@@ -129,26 +129,68 @@ struct AlignerGlobalMyersBanded::InternalData
     batched_device_matrices<WordType> query_patterns;
 };
 
+void AlignerGlobalMyersBanded::reallocate_internal_data(InternalData* data, const int64_t max_device_memory, const int32_t max_bandwidth, const int32_t n_alignments_initial, cudaStream_t stream)
+{
+    const memory_distribution mem    = split_available_memory(max_device_memory, max_bandwidth);
+    DefaultDeviceAllocator allocator = data->seq_d.get_allocator();
+
+    data->seq_h.clear();
+    data->seq_starts_h.clear();
+    data->scheduling_index_h.clear();
+    data->results_h.clear();
+    data->result_lengths_h.clear();
+    data->result_starts_h.clear();
+
+    data->results_h.resize(mem.results_memory / sizeof(char));
+    data->seq_h.resize(2 * mem.sequence_memory / sizeof(char));
+
+    data->seq_starts_h.reserve(2 * n_alignments_initial + 1);
+    data->scheduling_index_h.reserve(n_alignments_initial);
+    data->result_lengths_h.reserve(n_alignments_initial);
+    data->result_starts_h.reserve(n_alignments_initial + 1);
+
+    data->seq_d.free();
+    data->seq_starts_d.free();
+    data->scheduling_index_d.free();
+    data->scheduling_atomic_d.free();
+    data->results_d.free();
+    data->result_starts_d.free();
+    data->result_lengths_d.free();
+    data->pvs            = batched_device_matrices<WordType>();
+    data->mvs            = batched_device_matrices<WordType>();
+    data->scores         = batched_device_matrices<int32_t>();
+    data->query_patterns = batched_device_matrices<WordType>();
+
+    int64_t max_available_memory = allocator.get_size_of_largest_free_memory_block();
+    if (max_available_memory < get_total_memory_required(mem))
+    {
+        throw std::runtime_error("Not enough contiguous device memory in device allocator.");
+    }
+
+    data->seq_d.clear_and_resize(2 * mem.sequence_memory / sizeof(char));
+    data->seq_starts_d.clear_and_resize(2 * n_alignments_initial + 1);
+    data->scheduling_index_d.clear_and_resize(n_alignments_initial);
+    data->scheduling_atomic_d.clear_and_resize(1);
+    data->results_d.clear_and_resize(mem.results_memory / sizeof(char));
+    data->result_starts_d.clear_and_resize(n_alignments_initial + 1);
+    data->result_lengths_d.clear_and_resize(n_alignments_initial);
+    data->pvs            = batched_device_matrices<WordType>(mem.pmvs_matrix_memory / sizeof(WordType), allocator, stream);
+    data->mvs            = batched_device_matrices<WordType>(mem.pmvs_matrix_memory / sizeof(WordType), allocator, stream);
+    data->scores         = batched_device_matrices<int32_t>(mem.score_matrix_memory / sizeof(int32_t), allocator, stream);
+    data->query_patterns = batched_device_matrices<WordType>(mem.query_patterns_memory / sizeof(WordType), allocator, stream);
+}
+
 AlignerGlobalMyersBanded::AlignerGlobalMyersBanded(int64_t max_device_memory, int32_t max_bandwidth, DefaultDeviceAllocator allocator, cudaStream_t stream, int32_t device_id)
     : data_()
     , stream_(stream)
     , device_id_(device_id)
-    , max_bandwidth_(max_bandwidth)
+    , max_bandwidth_(throw_on_negative(max_bandwidth, "max_bandwidth cannot be negative."))
     , alignments_()
+    , max_device_memory_(max_device_memory < 0 ? get_size_of_largest_free_memory_block(allocator) : max_device_memory)
 {
-    if (max_bandwidth % (sizeof(WordType) * CHAR_BIT) == 1)
-    {
-        throw std::invalid_argument("Invalid max_bandwidth value. Please change it by +/-1.");
-    }
-    if (max_device_memory < 0)
-    {
-        max_device_memory = get_size_of_largest_free_memory_block(allocator);
-    }
     scoped_device_switch dev(device_id);
-    const memory_distribution mem = split_available_memory(max_device_memory, max_bandwidth);
-    data_                         = std::make_unique<AlignerGlobalMyersBanded::InternalData>(mem, n_alignments_initial_parameter, allocator, stream_);
-    data_->seq_starts_h.push_back(0);
-    data_->result_starts_h.push_back(0);
+    data_ = std::make_unique<AlignerGlobalMyersBanded::InternalData>(allocator, stream);
+    AlignerGlobalMyersBanded::reset_max_bandwidth(max_bandwidth);
 }
 
 AlignerGlobalMyersBanded::~AlignerGlobalMyersBanded()
@@ -158,6 +200,7 @@ AlignerGlobalMyersBanded::~AlignerGlobalMyersBanded()
 
 StatusType AlignerGlobalMyersBanded::add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length, bool reverse_complement_query, bool reverse_complement_target)
 {
+    GW_NVTX_RANGE(profiler, "AlignerGlobalMyersBanded::add_alignment");
     throw_on_negative(query_length, "query_length should not be negative");
     throw_on_negative(target_length, "target_length should not be negative");
     if (query == nullptr || target == nullptr)
@@ -201,9 +244,6 @@ StatusType AlignerGlobalMyersBanded::add_alignment(const char* query, int32_t qu
         return StatusType::exceeded_max_alignments;
     }
 
-    // TODO handle reverse complements
-    assert(reverse_complement_query == false);
-    assert(reverse_complement_target == false);
     assert(get_size(seq_starts_h) % 2 == 1);
     const int64_t seq_start = seq_starts_h.back();
     genomeutils::copy_sequence(query, query_length, seq_h.data() + seq_start, reverse_complement_query);
@@ -240,6 +280,7 @@ StatusType AlignerGlobalMyersBanded::add_alignment(const char* query, int32_t qu
 
 StatusType AlignerGlobalMyersBanded::align_all()
 {
+    GW_NVTX_RANGE(profiler, "AlignerGlobalMyersBanded::align_all");
     using cudautils::device_copy_n_async;
     const auto n_alignments = get_size(alignments_);
     if (n_alignments == 0)
@@ -254,15 +295,17 @@ StatusType AlignerGlobalMyersBanded::align_all()
 
     const auto& seq_h           = data_->seq_h;
     const auto& seq_starts_h    = data_->seq_starts_h;
+    auto& scheduling_index_h    = data_->scheduling_index_h;
     auto& results_h             = data_->results_h;
     auto& result_lengths_h      = data_->result_lengths_h;
     const auto& result_starts_h = data_->result_starts_h;
 
-    auto& seq_d            = data_->seq_d;
-    auto& seq_starts_d     = data_->seq_starts_d;
-    auto& results_d        = data_->results_d;
-    auto& result_starts_d  = data_->result_starts_d;
-    auto& result_lengths_d = data_->result_lengths_d;
+    auto& seq_d              = data_->seq_d;
+    auto& seq_starts_d       = data_->seq_starts_d;
+    auto& scheduling_index_d = data_->scheduling_index_d;
+    auto& results_d          = data_->results_d;
+    auto& result_starts_d    = data_->result_starts_d;
+    auto& result_lengths_d   = data_->result_lengths_d;
 
     assert(get_size(seq_starts_h) == 2 * n_alignments + 1);
     assert(get_size(result_starts_h) == n_alignments + 1);
@@ -278,12 +321,25 @@ StatusType AlignerGlobalMyersBanded::align_all()
     {
         result_lengths_d.clear_and_resize(n_alignments);
     }
+    if (get_size(scheduling_index_d) < n_alignments)
+    {
+        scheduling_index_d.clear_and_resize(n_alignments);
+    }
+
+    // Create an index of alignment tasks, which determines the processing
+    // order. Sort this index by the sum of query and target lengths such
+    // that large alignments get processed first.
+    scheduling_index_h.resize(n_alignments);
+    std::iota(begin(scheduling_index_h), end(scheduling_index_h), 0);
+    std::sort(begin(scheduling_index_h), end(scheduling_index_h), [&seq_starts_h](int32_t i, int32_t j) { return seq_starts_h[2 * i + 2] - seq_starts_h[2 * i] > seq_starts_h[2 * j + 2] - seq_starts_h[2 * j]; });
+
     device_copy_n_async(seq_h.data(), seq_starts_h.back(), seq_d.data(), stream_);
     device_copy_n_async(seq_starts_h.data(), 2 * n_alignments + 1, seq_starts_d.data(), stream_);
+    device_copy_n_async(scheduling_index_h.data(), n_alignments, scheduling_index_d.data(), stream_);
     device_copy_n_async(result_starts_h.data(), n_alignments + 1, result_starts_d.data(), stream_);
 
     myers_banded_gpu(results_d.data(), result_lengths_d.data(), result_starts_d.data(),
-                     seq_d.data(), seq_starts_d.data(), n_alignments, max_bandwidth_,
+                     seq_d.data(), seq_starts_d.data(), scheduling_index_d.data(), data_->scheduling_atomic_d.data(), n_alignments, max_bandwidth_,
                      data_->pvs, data_->mvs, data_->scores, data_->query_patterns,
                      stream_);
 
@@ -298,9 +354,11 @@ StatusType AlignerGlobalMyersBanded::align_all()
 
 StatusType AlignerGlobalMyersBanded::sync_alignments()
 {
+    GW_NVTX_RANGE(profiler, "AlignerGlobalMyersBanded::sync");
     scoped_device_switch dev(device_id_);
     GW_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
 
+    GW_NVTX_RANGE(profiler_post, "AlignerGlobalMyersBanded::post-sync");
     const int32_t n_alignments = get_size<int32_t>(alignments_);
     std::vector<AlignmentState> al_state;
     for (int32_t i = 0; i < n_alignments; ++i)
@@ -326,6 +384,20 @@ void AlignerGlobalMyersBanded::reset()
 {
     reset_data();
     alignments_.clear();
+}
+
+void AlignerGlobalMyersBanded::reset_max_bandwidth(const int32_t max_bandwidth)
+{
+    assert(max_device_memory_ >= 0);
+    throw_on_negative(max_bandwidth, "max_bandwidth cannot be negative.");
+    if (max_bandwidth % (sizeof(WordType) * CHAR_BIT) == 1)
+    {
+        throw std::invalid_argument("Invalid max_bandwidth. max_bandwidth % 32 == 1 is not allowed. Please change it by +/-1.");
+    }
+    scoped_device_switch dev(device_id_);
+    reallocate_internal_data(data_.get(), max_device_memory_, max_bandwidth, n_alignments_initial_parameter, stream_);
+    reset();
+    max_bandwidth_ = max_bandwidth;
 }
 
 void AlignerGlobalMyersBanded::reset_data()

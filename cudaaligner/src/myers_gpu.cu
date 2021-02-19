@@ -29,6 +29,10 @@
 #include <climits>
 #include <vector>
 #include <numeric>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#include <cuda/atomic>
+#pragma GCC diagnostic pop
 
 namespace claraparabricks
 {
@@ -45,6 +49,14 @@ namespace myers
 {
 
 constexpr int32_t initial_distance_guess_factor = 20;
+
+__global__ void init_atomic(cuda::atomic<int32_t, cuda::thread_scope_device>* atomic)
+{
+    // Safety-check for work-around for missing cuda::atomic_ref in libcu++ (see further below).
+    static_assert(sizeof(int32_t) == sizeof(cuda::atomic<int32_t, cuda::thread_scope_device>), "cuda::atomic<int32_t> needs to have the same size as int32_t.");
+    static_assert(alignof(int32_t) == alignof(cuda::atomic<int32_t, cuda::thread_scope_device>), "cuda::atomic<int32_t> needs to have the same alignment as int32_t.");
+    atomic->store(0, cuda::memory_order_relaxed);
+}
 
 inline __device__ WordType warp_leftshift_sync(uint32_t warp_mask, WordType v)
 {
@@ -765,6 +777,20 @@ myers_compute_scores_edit_dist_banded(
     }
 }
 
+__device__ int32_t get_alignment_task(const int32_t* scheduling_index_d, cuda::atomic<int32_t, cuda::thread_scope_device>* scheduling_atomic_d)
+{
+    // Fetch the index of the next alignment to be processed.
+    // A full warp operates on the same alignment, i.e.
+    // the whole warp gets the same alignment index.
+    int32_t sched_idx = 0;
+    if (threadIdx.x == 0)
+    {
+        sched_idx = scheduling_atomic_d->fetch_add(1, cuda::memory_order_relaxed);
+    }
+    sched_idx = __shfl_sync(0xffff'ffffu, sched_idx, 0);
+    return scheduling_index_d[sched_idx];
+}
+
 __global__ void myers_banded_kernel(
     int8_t* paths_base,
     int32_t* path_lengths,
@@ -774,6 +800,7 @@ __global__ void myers_banded_kernel(
     batched_device_matrices<int32_t>::device_interface* scorei,
     batched_device_matrices<WordType>::device_interface* query_patternsi,
     char const* sequences_d, int64_t const* sequence_starts_d,
+    const int32_t* scheduling_index_d, cuda::atomic<int32_t, cuda::thread_scope_device>* scheduling_atomic_d,
     const int32_t max_bandwidth,
     const int32_t n_alignments)
 {
@@ -781,7 +808,10 @@ __global__ void myers_banded_kernel(
     assert(threadIdx.x < warp_size);
     assert(max_bandwidth % word_size != 1); // we need at least two bits in the last word
 
-    const int32_t alignment_idx = blockIdx.x;
+    if (blockIdx.x >= n_alignments)
+        return;
+    const int32_t alignment_idx = get_alignment_task(scheduling_index_d, scheduling_atomic_d);
+    assert(alignment_idx < n_alignments);
     if (alignment_idx >= n_alignments)
         return;
     const char* const query   = sequences_d + sequence_starts_d[2 * alignment_idx];
@@ -992,6 +1022,8 @@ void myers_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length
 void myers_banded_gpu(int8_t* paths_d, int32_t* path_lengths_d, int64_t const* path_starts_d,
                       char const* sequences_d,
                       int64_t const* sequence_starts_d,
+                      int32_t const* scheduling_index_d,
+                      int32_t* scheduling_atomic_int_d,
                       int32_t n_alignments,
                       int32_t max_bandwidth,
                       batched_device_matrices<myers::WordType>& pv,
@@ -1002,9 +1034,16 @@ void myers_banded_gpu(int8_t* paths_d, int32_t* path_lengths_d, int64_t const* p
 {
     const dim3 threads(warp_size, 1, 1);
     const dim3 blocks(n_alignments, 1, 1);
+
+    // Work-around for missing cuda::atomic_ref in libcu++.
+    static_assert(sizeof(int32_t) == sizeof(cuda::atomic<int32_t, cuda::thread_scope_device>), "cuda::atomic<int32_t> needs to have the same size as int32_t.");
+    static_assert(alignof(int32_t) == alignof(cuda::atomic<int32_t, cuda::thread_scope_device>), "cuda::atomic<int32_t> needs to have the same alignment as int32_t.");
+    cuda::atomic<int32_t, cuda::thread_scope_device>* const scheduling_atomic_d = reinterpret_cast<cuda::atomic<int32_t, cuda::thread_scope_device>*>(scheduling_atomic_int_d);
+
+    myers::init_atomic<<<1, 1, 0, stream>>>(scheduling_atomic_d);
     myers::myers_banded_kernel<<<blocks, threads, 0, stream>>>(paths_d, path_lengths_d, path_starts_d,
                                                                pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(),
-                                                               sequences_d, sequence_starts_d, max_bandwidth, n_alignments);
+                                                               sequences_d, sequence_starts_d, scheduling_index_d, scheduling_atomic_d, max_bandwidth, n_alignments);
     GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 

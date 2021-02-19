@@ -47,7 +47,6 @@ cuda_add_library(${MODULE_NAME} ${gw_library_type}
 
 target_link_libraries(${MODULE_NAME} gwbase gwio cub)
 
-target_compile_options(${MODULE_NAME} PRIVATE -Werror -Wall -Wextra)
 if (gw_optimize_for_native_cpu)
     target_compile_options(${MODULE_NAME} PRIVATE -march=native)
 endif ()
