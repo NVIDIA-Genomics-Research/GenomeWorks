@@ -51,8 +51,10 @@ pip uninstall -y pygenomeworks
 logger "Create pygenomeworks Wheel package..."
 CUDA_VERSION_FOR_PACKAGE_NAME=$(echo "$CUDA_VERSION" | cut -d"." -f1-2 | sed -e "s/\./_/g")
 if [ "${COMMIT_HASH}" == "master" ]; then
-  PYGW_VERSION=$(cat ../VERSION)
+  # Official Release package
+  PYGW_VERSION=$(cat ../VERSION | tr -d "\n")
 else
+  # Development package
   PYGW_VERSION=$(cat ../VERSION | tr -d "\n")\.dev$(date +%y%m%d) # for nightly build
 fi
 python setup_pygenomeworks.py \
