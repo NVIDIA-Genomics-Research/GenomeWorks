@@ -21,6 +21,7 @@
 #include <claraparabricks/genomeworks/utils/graph.hpp>
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/utils/allocator.hpp>
 
 #include <memory>
 #include <vector>
@@ -64,8 +65,6 @@ struct BatchConfig
     int32_t max_consensus_size;
     /// Maximum number of nodes in a POA graph, one graph per window
     int32_t max_nodes_per_graph;
-    /// Maximum vertical dimension of scoring matrix, which stores POA graph
-    int32_t matrix_graph_dimension;
     /// Maximum horizontal dimension of scoring matrix, which stores part of sequences used in scores matrix computation
     int32_t matrix_sequence_dimension;
     /// Band-width used in banded alignment, it also defines minimum band-width in adaptive alignment
@@ -74,13 +73,16 @@ struct BatchConfig
     int32_t max_sequences_per_poa;
     /// Banding mode: full, static, adaptive
     BandMode band_mode;
+    /// Maximum distance of predecessor node used in NW computations for static or adaptive-banded
+    int32_t max_banded_pred_distance;
 
     /// constructor- set upper limit parameters based on max_seq_sz and band_width
-    BatchConfig(int32_t max_seq_sz = 1024, int32_t max_seq_per_poa = 100, int32_t band_width = 256, BandMode banding = BandMode::full_band);
+    BatchConfig(int32_t max_seq_sz = 1024, int32_t max_seq_per_poa = 100, int32_t band_width = 256, BandMode banding = BandMode::full_band,
+                float adapive_storage_factor = 2.0, float graph_length_factor = 3.0, int32_t max_pred_dist = 0);
 
     /// constructor- set all parameters separately
-    BatchConfig(int32_t max_seq_sz, int32_t max_consensus_sz, int32_t max_nodes_per_w,
-                int32_t band_width, int32_t max_seq_per_poa, int32_t matrix_seq_dim, BandMode banding);
+    BatchConfig(int32_t max_seq_sz, int32_t max_consensus_sz, int32_t max_nodes_per_poa, int32_t band_width,
+                int32_t max_seq_per_poa, int32_t matrix_seq_dim, BandMode banding, int32_t max_pred_dist);
 };
 
 /// \class Batch
@@ -163,17 +165,38 @@ public:
 ///
 /// \param device_id                GPU device on which to run CUDA POA algorithm
 /// \param stream                   CUDA stream to use on GPU
+/// \param allocator                Allocator to use for internal device memory allocations
 /// \param max_gpu_mem              Maximum GPU memory to use for this batch.
 /// \param output_mask              which outputs to produce from POA (msa, consensus)
 /// \param batch_size               defines upper limits for size of a POA batch, i.e. sequence length and other related parameters
 /// \param gap_score                score to be assigned to a gap
 /// \param mismatch_score           score to be assigned to a mismatch
 /// \param match_score              score to be assigned for a match
-///
 /// \return Returns a unique pointer to a new Batch object
 std::unique_ptr<Batch> create_batch(int32_t device_id,
                                     cudaStream_t stream,
-                                    size_t max_gpu_mem,
+                                    DefaultDeviceAllocator allocator,
+                                    int64_t max_gpu_mem,
+                                    int8_t output_mask,
+                                    const BatchConfig& batch_size,
+                                    int16_t gap_score,
+                                    int16_t mismatch_score,
+                                    int16_t match_score);
+
+/// \brief Creates a new CUDA Batch object.
+///
+/// \param device_id                GPU device on which to run CUDA POA algorithm
+/// \param stream                   CUDA stream to use on GPU
+/// \param max_gpu_mem              Maximum GPU memory to use for this batch.
+/// \param output_mask              which outputs to produce from POA (msa, consensus)
+/// \param batch_size               defines upper limits for size of a POA batch, i.e. sequence length and other related parameters
+/// \param gap_score                score to be assigned to a gap
+/// \param mismatch_score           score to be assigned to a mismatch
+/// \param match_score              score to be assigned for a match
+/// \return Returns a unique pointer to a new Batch object
+std::unique_ptr<Batch> create_batch(int32_t device_id,
+                                    cudaStream_t stream,
+                                    int64_t max_gpu_mem,
                                     int8_t output_mask,
                                     const BatchConfig& batch_size,
                                     int16_t gap_score,

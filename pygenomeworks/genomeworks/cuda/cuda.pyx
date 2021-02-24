@@ -39,12 +39,6 @@ cdef class CudaStream:
     """Class to abstract the usage of CUDA streams which enable
     easy asynchronous execution of CUDA kernels.
     """
-    # Using size_t to store stream since underlying
-    # representation of cudaStream_t is a (void *)
-    # and python doesn't know how to deal with converting
-    # (void *) to python objects.
-    cdef size_t stream
-
     def __cinit__(self):
         """Constructs a CudaStream object to encapsulate a CUDA stream.
         """

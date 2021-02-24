@@ -45,7 +45,7 @@ namespace cudapoa
 template <typename SizeT>
 __device__ void topologicalSortDeviceUtil(SizeT* sorted_poa,
                                           SizeT* sorted_poa_node_map,
-                                          SizeT node_count,
+                                          int32_t node_count,
                                           uint16_t* incoming_edge_count,
                                           SizeT* outgoing_edges,
                                           uint16_t* outgoing_edge_count,
@@ -55,12 +55,12 @@ __device__ void topologicalSortDeviceUtil(SizeT* sorted_poa,
     // Clear the incoming edge count for each node.
     //__shared__ int16_t local_incoming_edge_count[CUDAPOA_MAX_NODES_PER_WINDOW];
     //memset(local_incoming_edge_count, -1, CUDAPOA_MAX_NODES_PER_WINDOW);
-    SizeT sorted_poa_position = 0;
+    int32_t sorted_poa_position = 0;
 
     // Iterate through node IDs (since nodes are from 0
     // through node_count -1, a simple loop works) and fill
     // out the incoming edge count.
-    for (SizeT n = 0; n < node_count; n++)
+    for (int32_t n = 0; n < node_count; n++)
     {
         local_incoming_edge_count[n] = incoming_edge_count[n];
         // If we find a node ID has 0 incoming edges, add it to sorted nodes list.
@@ -75,19 +75,21 @@ __device__ void topologicalSortDeviceUtil(SizeT* sorted_poa,
     // then iterate through their children. For each child decrement their
     // incoming edge count. If incoming edge count of child == 0,
     // add its node ID to the sorted order list.
-    for (SizeT n = 0; n < sorted_poa_position; n++)
+
+    for (int32_t n = 0; n < sorted_poa_position; n++)
     {
-        SizeT node = sorted_poa[n];
-        for (uint16_t edge = 0; edge < outgoing_edge_count[node]; edge++)
+        int32_t node = sorted_poa[n];
+        for (int32_t edge = 0; edge < outgoing_edge_count[node]; edge++)
         {
-            SizeT out_node = outgoing_edges[node * CUDAPOA_MAX_NODE_EDGES + edge];
+            int32_t out_node = outgoing_edges[node * CUDAPOA_MAX_NODE_EDGES + edge];
             //printf("%d\n", out_node);
-            local_incoming_edge_count[out_node]--;
-            if (local_incoming_edge_count[out_node] == 0)
+            uint16_t in_node_count = local_incoming_edge_count[out_node];
+            if (--in_node_count == 0)
             {
                 sorted_poa_node_map[out_node]     = sorted_poa_position;
                 sorted_poa[sorted_poa_position++] = out_node;
             }
+            local_incoming_edge_count[out_node] = in_node_count;
         }
     }
 
@@ -137,7 +139,7 @@ __device__ void raconTopologicalSortDeviceUtil(SizeT* sorted_poa,
 
             if (node_marks[node_id] != 2)
             {
-                for (uint16_t e = 0; e < incoming_edge_count[node_id]; e++)
+                for (int32_t e = 0; e < incoming_edge_count[node_id]; e++)
                 {
                     SizeT begin_node_id = incoming_edges[node_id * CUDAPOA_MAX_NODE_EDGES + e];
                     if (node_marks[begin_node_id] != 2)
@@ -150,7 +152,7 @@ __device__ void raconTopologicalSortDeviceUtil(SizeT* sorted_poa,
 
                 if (check_aligned_nodes[node_id])
                 {
-                    for (uint16_t a = 0; a < aligned_node_count[node_id]; a++)
+                    for (int32_t a = 0; a < aligned_node_count[node_id]; a++)
                     {
                         SizeT aid = aligned_nodes[node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + a];
                         if (node_marks[aid] != 2)
@@ -171,7 +173,7 @@ __device__ void raconTopologicalSortDeviceUtil(SizeT* sorted_poa,
                         sorted_poa[sorted_poa_idx]   = node_id;
                         sorted_poa_node_map[node_id] = sorted_poa_idx;
                         sorted_poa_idx++;
-                        for (uint16_t a = 0; a < aligned_node_count[node_id]; a++)
+                        for (int32_t a = 0; a < aligned_node_count[node_id]; a++)
                         {
                             SizeT aid                  = aligned_nodes[node_id * CUDAPOA_MAX_NODE_ALIGNMENTS + a];
                             sorted_poa[sorted_poa_idx] = aid;

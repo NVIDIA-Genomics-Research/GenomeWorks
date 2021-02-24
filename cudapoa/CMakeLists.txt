@@ -26,19 +26,9 @@ GitVersion()
 configure_file(${PROJECT_SOURCE_DIR}/common/base/src/version.cpp.in
                 ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
 
-# Optimization flags interfere with nvcc and cause compilation issues with reworked
-# file structure.
-if(NOT DEFINED gw_cuda_before_10_0)
-    message(FATAL_ERROR "${MODULE_NAME} : variable gw_cuda_before_10_0 is not defined yet. Please make sure CUDA.cmake is loaded first.")
-elseif(gw_cuda_before_10_0)
-    message(STATUS "${MODULE_NAME} : Remove -O optimization when building for CUDA < 10 as it causes compilation issues.")
-    string(REGEX REPLACE "-O[0-3]" "" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
-    string(REGEX REPLACE "-O[0-3]" "" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
-endif()
-
 # Project specific NVCC flags, --expt-relaxed-constexpr is being added to allow using numeric_limits inside device kernels.
 # Using in CUDA 10.1+ to avoid compilation issues with CUDA <= 10.0.
-set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14")
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14 -arch=compute_60")
 if(gw_cuda_after_10_0)
     set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --expt-relaxed-constexpr")
 endif()
@@ -54,7 +44,6 @@ cuda_add_library(${MODULE_NAME} ${gw_library_type}
 
 target_link_libraries(${MODULE_NAME} gwbase gwio)
 
-target_compile_options(${MODULE_NAME} PRIVATE -Werror -Wall -Wextra)
 if (gw_optimize_for_native_cpu)
     target_compile_options(${MODULE_NAME} PRIVATE -march=native)
 endif()
@@ -74,6 +63,7 @@ target_include_directories(${MODULE_NAME}
 )
 
 add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/include)
+add_doxygen_source_dir(${CMAKE_CURRENT_SOURCE_DIR}/README.md)
 
 add_executable(${MODULE_NAME}-bin
         src/main.cpp

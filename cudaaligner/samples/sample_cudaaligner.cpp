@@ -26,6 +26,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <random>
+#include <getopt.h>
 
 using namespace claraparabricks::genomeworks;
 using namespace claraparabricks::genomeworks::genomeutils;
@@ -56,7 +57,7 @@ std::unique_ptr<Aligner> initialize_batch(int32_t max_query_size,
                                                     stream,
                                                     device_id);
 
-    return std::move(batch);
+    return batch;
 }
 
 void generate_data(std::vector<std::pair<std::string, std::string>>& data,

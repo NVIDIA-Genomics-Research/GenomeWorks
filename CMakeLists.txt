@@ -23,8 +23,8 @@ string(STRIP ${GW_VERSION} GW_VERSION)
 project(${GW_PROJECT_NAME})
 
 # Process options.
-option(gw_enable_tests "Build GenomeWorks unit tests" OFF)
-option(gw_enable_benchmarks "Build GenomeWorks benchmarks" OFF)
+option(gw_enable_tests "Build GenomeWorks unit tests" ON)
+option(gw_enable_benchmarks "Build GenomeWorks benchmarks" ON)
 option(gw_build_shared "Build GenomeWorks libraries as shared objects" OFF)
 option(gw_device_synchronize_kernels "Run cudaDeviceSynchronize() in GW_CU_CHECK_ERR calls" OFF)
 option(gw_optimize_for_native_cpu "Build with march=native" ON)
@@ -41,6 +41,8 @@ option(gw_profiling "Compile a binary for profiling with NVTX markers." OFF)
 option(gw_enable_caching_allocator "Enable caching allocator." ON)
 option(gw_generate_docs "Generate Doxygen documentation" ON)
 option(gw_cuda_gen_all_arch "ON: Generate optimized CUDA code for all architectures | OFF: for detected architectures only" OFF)
+# Optionally build htslib for SAM/BAM support. Requires autoconf to be installed
+option(gw_build_htslib "Build 3rdparty htslib that allows output in SAM/BAM format" ON)
 
 # Must be included before others for options value validation
 include(cmake/Utils.cmake)
@@ -66,10 +68,10 @@ else()
     set_property(GLOBAL PROPERTY gw_library_type STATIC)
 endif()
 
-include(cmake/CXX.cmake)
 include(cmake/CUDA.cmake)
-include(cmake/Doxygen.cmake)
 include(cmake/3rdparty.cmake)
+include(cmake/CXX.cmake) # Must occur after 3rdparty modules are added
+include(cmake/Doxygen.cmake)
 include(cmake/Tests.cmake)
 include(cmake/Benchmarks.cmake)
 include(cmake/Format.cmake)
@@ -83,6 +85,7 @@ add_subdirectory(common/io)
 add_subdirectory(cudapoa)
 add_subdirectory(cudamapper)
 add_subdirectory(cudaaligner)
+add_subdirectory(cudaextender)
 
 # Add documentation generation.
 validate_boolean(gw_generate_docs)

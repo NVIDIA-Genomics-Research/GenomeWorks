@@ -14,6 +14,9 @@
 * limitations under the License.
 */
 
+// This is required for the unused parameter error raised by cuda/atomic
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
 #include "myers_gpu.cuh"
 #include "batched_device_matrices.cuh"
 
@@ -29,6 +32,7 @@
 #include <climits>
 #include <vector>
 #include <numeric>
+#include <cuda/atomic>
 
 namespace claraparabricks
 {
@@ -45,6 +49,14 @@ namespace myers
 {
 
 constexpr int32_t initial_distance_guess_factor = 20;
+
+__global__ void init_atomic(cuda::atomic<int32_t, cuda::thread_scope_device>* atomic)
+{
+    // Safety-check for work-around for missing cuda::atomic_ref in libcu++ (see further below).
+    static_assert(sizeof(int32_t) == sizeof(cuda::atomic<int32_t, cuda::thread_scope_device>), "cuda::atomic<int32_t> needs to have the same size as int32_t.");
+    static_assert(alignof(int32_t) == alignof(cuda::atomic<int32_t, cuda::thread_scope_device>), "cuda::atomic<int32_t> needs to have the same alignment as int32_t.");
+    atomic->store(0, cuda::memory_order_relaxed);
+}
 
 inline __device__ WordType warp_leftshift_sync(uint32_t warp_mask, WordType v)
 {
@@ -351,9 +363,8 @@ __global__ void myers_compute_score_matrix_kernel(
     GW_CONSTEXPR int32_t warp_size = 32;
     assert(warpSize == warp_size);
     assert(threadIdx.x < warp_size);
-    assert(blockIdx.x == 0);
 
-    const int32_t alignment_idx = blockIdx.y * blockDim.y + threadIdx.y;
+    const int32_t alignment_idx = blockIdx.x;
     if (alignment_idx >= n_alignments)
         return;
     const int32_t query_size        = sequence_lengths_d[2 * alignment_idx];
@@ -425,19 +436,25 @@ __device__ int32_t myers_backtrace_banded(int8_t* path, device_matrix_view<WordT
     assert(pv.num_cols() == score.num_cols());
     assert(mv.num_cols() == score.num_cols());
     assert(score.num_rows() == ceiling_divide(band_width, word_size));
+    assert(diagonal_begin >= 0);
+    assert(diagonal_end >= diagonal_begin);
+    assert(diagonal_end >= 2); // this should only break if target_size == 0 - which is not valid input.
+
     int32_t i = band_width;
     int32_t j = target_size;
 
     const WordType last_entry_mask = band_width % word_size != 0 ? (WordType(1) << (band_width % word_size)) - 1 : ~WordType(0);
 
-    nw_score_t myscore = score((i - 1) / word_size, j); // row 0 is implicit, NW matrix is shifted by i -> i-1 (see get_myers_score)
-    int32_t pos        = 0;
+    const nw_score_t last_diagonal_score = diagonal_end < 2 ? out_of_band : get_myers_score(1, diagonal_end - 2, pv, mv, score, last_entry_mask) + 2;
+    nw_score_t myscore                   = score((i - 1) / word_size, j); // row 0 is implicit, NW matrix is shifted by i -> i-1, i.e. i \in [1,band_width] for get_myers_score. (see get_myers_score)
+    int32_t pos                          = 0;
     while (j >= diagonal_end)
     {
-        int8_t r               = 0;
-        nw_score_t const above = i <= 1 ? j : get_myers_score(i - 1, j, pv, mv, score, last_entry_mask);
-        nw_score_t const diag  = i <= 1 ? j - 1 : get_myers_score(i - 1, j - 1, pv, mv, score, last_entry_mask);
-        nw_score_t const left  = get_myers_score(i, j - 1, pv, mv, score, last_entry_mask);
+        int8_t r = 0;
+        // Worst case for the implicit top row (i == 0) of the bottom right block of the NW is the last diagonal entry on the same row + (j - diagonal_end) * indel cost.
+        nw_score_t const above = i <= 1 ? (last_diagonal_score + j - diagonal_end) : get_myers_score(i - 1, j, pv, mv, score, last_entry_mask);
+        nw_score_t const diag  = i <= 1 ? (last_diagonal_score + j - 1 - diagonal_end) : get_myers_score(i - 1, j - 1, pv, mv, score, last_entry_mask);
+        nw_score_t const left  = i < 1 ? (last_diagonal_score + j - 1 - diagonal_end) : get_myers_score(i, j - 1, pv, mv, score, last_entry_mask);
         if (left + 1 == myscore)
         {
             r       = static_cast<int8_t>(AlignmentState::insertion);
@@ -452,6 +469,7 @@ __device__ int32_t myers_backtrace_banded(int8_t* path, device_matrix_view<WordT
         }
         else
         {
+            assert(diag == myscore || diag + 1 == myscore);
             r       = (diag == myscore ? static_cast<int8_t>(AlignmentState::match) : static_cast<int8_t>(AlignmentState::mismatch));
             myscore = diag;
             --i;
@@ -463,9 +481,10 @@ __device__ int32_t myers_backtrace_banded(int8_t* path, device_matrix_view<WordT
     while (j >= diagonal_begin)
     {
         int8_t r               = 0;
-        nw_score_t const above = i <= 1 ? j : get_myers_score(i - 1, j, pv, mv, score, last_entry_mask);
+        nw_score_t const above = i <= 1 ? out_of_band : get_myers_score(i - 1, j, pv, mv, score, last_entry_mask);
         nw_score_t const diag  = i <= 0 ? j - 1 : get_myers_score(i, j - 1, pv, mv, score, last_entry_mask);
         nw_score_t const left  = i >= band_width ? out_of_band : get_myers_score(i + 1, j - 1, pv, mv, score, last_entry_mask);
+        // out-of-band cases: diag always preferrable, since worst-case-(above|left) - myscore >= diag - myscore always holds.
         if (left + 1 == myscore)
         {
             r       = static_cast<int8_t>(AlignmentState::insertion);
@@ -481,6 +500,7 @@ __device__ int32_t myers_backtrace_banded(int8_t* path, device_matrix_view<WordT
         }
         else
         {
+            assert(diag == myscore || diag + 1 == myscore);
             r       = (diag == myscore ? static_cast<int8_t>(AlignmentState::match) : static_cast<int8_t>(AlignmentState::mismatch));
             myscore = diag;
             --j;
@@ -494,6 +514,7 @@ __device__ int32_t myers_backtrace_banded(int8_t* path, device_matrix_view<WordT
         nw_score_t const above = i == 1 ? j : get_myers_score(i - 1, j, pv, mv, score, last_entry_mask);
         nw_score_t const diag  = i == 1 ? j - 1 : get_myers_score(i - 1, j - 1, pv, mv, score, last_entry_mask);
         nw_score_t const left  = i > band_width ? out_of_band : get_myers_score(i, j - 1, pv, mv, score, last_entry_mask);
+        // out-of-band cases: diag always preferrable, since worst-case-(above|left) - myscore >= diag - myscore always holds.
         if (left + 1 == myscore)
         {
             r       = static_cast<int8_t>(AlignmentState::insertion);
@@ -508,6 +529,7 @@ __device__ int32_t myers_backtrace_banded(int8_t* path, device_matrix_view<WordT
         }
         else
         {
+            assert(diag == myscore || diag + 1 == myscore);
             r       = (diag == myscore ? static_cast<int8_t>(AlignmentState::match) : static_cast<int8_t>(AlignmentState::mismatch));
             myscore = diag;
             --i;
@@ -678,7 +700,6 @@ myers_compute_scores_edit_dist_banded(
     // Note: 0-th row of the NW matrix is implicit for pv, mv and score! (given by the inital warp_carry)
     assert(warpSize == warp_size);
     assert(threadIdx.x < warp_size);
-    assert(blockIdx.x == 0);
 
     assert(target_size > 0);
     assert(query_size > 0);
@@ -756,6 +777,20 @@ myers_compute_scores_edit_dist_banded(
     }
 }
 
+__device__ int32_t get_alignment_task(const int32_t* scheduling_index_d, cuda::atomic<int32_t, cuda::thread_scope_device>* scheduling_atomic_d)
+{
+    // Fetch the index of the next alignment to be processed.
+    // A full warp operates on the same alignment, i.e.
+    // the whole warp gets the same alignment index.
+    int32_t sched_idx = 0;
+    if (threadIdx.x == 0)
+    {
+        sched_idx = scheduling_atomic_d->fetch_add(1, cuda::memory_order_relaxed);
+    }
+    sched_idx = __shfl_sync(0xffff'ffffu, sched_idx, 0);
+    return scheduling_index_d[sched_idx];
+}
+
 __global__ void myers_banded_kernel(
     int8_t* paths_base,
     int32_t* path_lengths,
@@ -765,15 +800,18 @@ __global__ void myers_banded_kernel(
     batched_device_matrices<int32_t>::device_interface* scorei,
     batched_device_matrices<WordType>::device_interface* query_patternsi,
     char const* sequences_d, int64_t const* sequence_starts_d,
+    const int32_t* scheduling_index_d, cuda::atomic<int32_t, cuda::thread_scope_device>* scheduling_atomic_d,
     const int32_t max_bandwidth,
     const int32_t n_alignments)
 {
     assert(warpSize == warp_size);
     assert(threadIdx.x < warp_size);
-    assert(blockIdx.x == 0);
     assert(max_bandwidth % word_size != 1); // we need at least two bits in the last word
 
-    const int32_t alignment_idx = blockIdx.y * blockDim.y + threadIdx.y;
+    if (blockIdx.x >= n_alignments)
+        return;
+    const int32_t alignment_idx = get_alignment_task(scheduling_index_d, scheduling_atomic_d);
+    assert(alignment_idx < n_alignments);
     if (alignment_idx >= n_alignments)
         return;
     const char* const query   = sequences_d + sequence_starts_d[2 * alignment_idx];
@@ -879,33 +917,28 @@ int32_t myers_compute_edit_distance(std::string const& target, std::string const
         return get_size(target);
 
     const int32_t n_words = (get_size(query) + word_size - 1) / word_size;
-    matrix<int32_t> score_host;
 
-    cudaStream_t stream;
-    GW_CU_CHECK_ERR(cudaStreamCreate(&stream));
-    {
-        DefaultDeviceAllocator allocator = create_default_device_allocator();
+    CudaStream stream                = make_cuda_stream();
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
 
-        int32_t max_sequence_length = std::max(get_size(target), get_size(query));
-        device_buffer<char> sequences_d(2 * max_sequence_length, allocator, stream);
-        device_buffer<int32_t> sequence_lengths_d(2, allocator, stream);
+    int32_t max_sequence_length = std::max(get_size(target), get_size(query));
+    device_buffer<char> sequences_d(2 * max_sequence_length, allocator, stream.get());
+    device_buffer<int32_t> sequence_lengths_d(2, allocator, stream.get());
 
-        batched_device_matrices<myers::WordType> pv(1, n_words * (get_size(target) + 1), allocator, stream);
-        batched_device_matrices<myers::WordType> mv(1, n_words * (get_size(target) + 1), allocator, stream);
-        batched_device_matrices<int32_t> score(1, n_words * (get_size(target) + 1), allocator, stream);
-        batched_device_matrices<myers::WordType> query_patterns(1, n_words * 4, allocator, stream);
+    batched_device_matrices<myers::WordType> pv(1, n_words * (get_size(target) + 1), allocator, stream.get());
+    batched_device_matrices<myers::WordType> mv(1, n_words * (get_size(target) + 1), allocator, stream.get());
+    batched_device_matrices<int32_t> score(1, n_words * (get_size(target) + 1), allocator, stream.get());
+    batched_device_matrices<myers::WordType> query_patterns(1, n_words * 4, allocator, stream.get());
 
-        std::array<int32_t, 2> lengths = {static_cast<int32_t>(get_size(query)), static_cast<int32_t>(get_size(target))};
-        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data(), query.data(), sizeof(char) * get_size(query), cudaMemcpyHostToDevice, stream));
-        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data() + max_sequence_length, target.data(), sizeof(char) * get_size(target), cudaMemcpyHostToDevice, stream));
-        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d.data(), lengths.data(), sizeof(int32_t) * 2, cudaMemcpyHostToDevice, stream));
+    std::array<int32_t, 2> lengths = {static_cast<int32_t>(get_size(query)), static_cast<int32_t>(get_size(target))};
+    cudautils::device_copy_n_async(query.data(), get_size(query), sequences_d.data(), stream.get());
+    cudautils::device_copy_n_async(target.data(), get_size(target), sequences_d.data() + max_sequence_length, stream.get());
+    cudautils::device_copy_n_async(lengths.data(), 2, sequence_lengths_d.data(), stream.get());
 
-        myers::myers_compute_score_matrix_kernel<<<1, warp_size, 0, stream>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d.data(), sequence_lengths_d.data(), max_sequence_length, 1);
+    myers::myers_compute_score_matrix_kernel<<<1, warp_size, 0, stream.get()>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d.data(), sequence_lengths_d.data(), max_sequence_length, 1);
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 
-        score_host = score.get_matrix(0, n_words, get_size(target) + 1, stream);
-        GW_CU_CHECK_ERR(cudaStreamSynchronize(stream));
-    }
-    GW_CU_CHECK_ERR(cudaStreamDestroy(stream));
+    matrix<int32_t> score_host = score.get_matrix(0, n_words, get_size(target) + 1, stream.get());
     return score_host(n_words - 1, get_size(target));
 }
 
@@ -927,44 +960,38 @@ matrix<int32_t> myers_get_full_score_matrix(std::string const& target, std::stri
         return r;
     }
 
-    matrix<int32_t> fullscore_host;
+    CudaStream stream = make_cuda_stream();
 
-    cudaStream_t stream;
-    GW_CU_CHECK_ERR(cudaStreamCreate(&stream));
+    DefaultDeviceAllocator allocator = create_default_device_allocator();
+    int32_t max_sequence_length      = std::max(get_size(target), get_size(query));
+    device_buffer<char> sequences_d(2 * max_sequence_length, allocator, stream.get());
+    device_buffer<int32_t> sequence_lengths_d(2, allocator, stream.get());
 
+    const int32_t n_words = (get_size(query) + word_size - 1) / word_size;
+    batched_device_matrices<myers::WordType> pv(1, n_words * (get_size(target) + 1), allocator, stream.get());
+    batched_device_matrices<myers::WordType> mv(1, n_words * (get_size(target) + 1), allocator, stream.get());
+    batched_device_matrices<int32_t> score(1, n_words * (get_size(target) + 1), allocator, stream.get());
+    batched_device_matrices<myers::WordType> query_patterns(1, n_words * 4, allocator, stream.get());
+
+    batched_device_matrices<int32_t> fullscore(1, (get_size(query) + 1) * (get_size(target) + 1), allocator, stream.get());
+
+    std::array<int32_t, 2> lengths = {static_cast<int32_t>(get_size(query)), static_cast<int32_t>(get_size(target))};
+    cudautils::device_copy_n_async(query.data(), get_size(query), sequences_d.data(), stream.get());
+    cudautils::device_copy_n_async(target.data(), get_size(target), sequences_d.data() + max_sequence_length, stream.get());
+    cudautils::device_copy_n_async(lengths.data(), 2, sequence_lengths_d.data(), stream.get());
+
+    myers::myers_compute_score_matrix_kernel<<<1, warp_size, 0, stream.get()>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d.data(), sequence_lengths_d.data(), max_sequence_length, 1);
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
     {
-        DefaultDeviceAllocator allocator = create_default_device_allocator();
-        int32_t max_sequence_length      = std::max(get_size(target), get_size(query));
-        device_buffer<char> sequences_d(2 * max_sequence_length, allocator, stream);
-        device_buffer<int32_t> sequence_lengths_d(2, allocator, stream);
-
-        const int32_t n_words = (get_size(query) + word_size - 1) / word_size;
-        batched_device_matrices<myers::WordType> pv(1, n_words * (get_size(target) + 1), allocator, stream);
-        batched_device_matrices<myers::WordType> mv(1, n_words * (get_size(target) + 1), allocator, stream);
-        batched_device_matrices<int32_t> score(1, n_words * (get_size(target) + 1), allocator, stream);
-        batched_device_matrices<myers::WordType> query_patterns(1, n_words * 4, allocator, stream);
-
-        batched_device_matrices<int32_t> fullscore(1, (get_size(query) + 1) * (get_size(target) + 1), allocator, stream);
-
-        std::array<int32_t, 2> lengths = {static_cast<int32_t>(get_size(query)), static_cast<int32_t>(get_size(target))};
-        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data(), query.data(), sizeof(char) * get_size(query), cudaMemcpyHostToDevice, stream));
-        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequences_d.data() + max_sequence_length, target.data(), sizeof(char) * get_size(target), cudaMemcpyHostToDevice, stream));
-        GW_CU_CHECK_ERR(cudaMemcpyAsync(sequence_lengths_d.data(), lengths.data(), sizeof(int32_t) * 2, cudaMemcpyHostToDevice, stream));
-
-        myers::myers_compute_score_matrix_kernel<<<1, warp_size, 0, stream>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d.data(), sequence_lengths_d.data(), max_sequence_length, 1);
-        {
-            dim3 n_threads = {32, 4, 1};
-            dim3 n_blocks  = {1, 1, 1};
-            n_blocks.x     = ceiling_divide<int32_t>(get_size<int32_t>(query) + 1, n_threads.x);
-            n_blocks.y     = ceiling_divide<int32_t>(get_size<int32_t>(target) + 1, n_threads.y);
-            myers::myers_convert_to_full_score_matrix_kernel<<<n_blocks, n_threads, 0, stream>>>(fullscore.get_device_interface(), pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), sequence_lengths_d.data(), 0);
-        }
-
-        fullscore_host = fullscore.get_matrix(0, get_size(query) + 1, get_size(target) + 1, stream);
+        dim3 n_threads = {32, 4, 1};
+        dim3 n_blocks  = {1, 1, 1};
+        n_blocks.x     = ceiling_divide<int32_t>(get_size<int32_t>(query) + 1, n_threads.x);
+        n_blocks.y     = ceiling_divide<int32_t>(get_size<int32_t>(target) + 1, n_threads.y);
+        myers::myers_convert_to_full_score_matrix_kernel<<<n_blocks, n_threads, 0, stream.get()>>>(fullscore.get_device_interface(), pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), sequence_lengths_d.data(), 0);
+        GW_CU_CHECK_ERR(cudaPeekAtLastError());
     }
 
-    GW_CU_CHECK_ERR(cudaStreamSynchronize(stream));
-    GW_CU_CHECK_ERR(cudaStreamDestroy(stream));
+    matrix<int32_t> fullscore_host = fullscore.get_matrix(0, get_size(query) + 1, get_size(target) + 1, stream.get());
     return fullscore_host;
 }
 
@@ -981,7 +1008,7 @@ void myers_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length
 {
     {
         const dim3 threads(warp_size, 1, 1);
-        const dim3 blocks(1, ceiling_divide<int32_t>(n_alignments, threads.y), 1);
+        const dim3 blocks(n_alignments, 1, 1);
         myers::myers_compute_score_matrix_kernel<<<blocks, threads, 0, stream>>>(pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(), sequences_d, sequence_lengths_d, max_sequence_length, n_alignments);
     }
     {
@@ -989,11 +1016,14 @@ void myers_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length
         const dim3 blocks(ceiling_divide<int32_t>(n_alignments, threads.x), 1, 1);
         myers::myers_backtrace_kernel<<<blocks, threads, 0, stream>>>(paths_d, path_lengths_d, max_path_length, pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), sequence_lengths_d, n_alignments);
     }
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 void myers_banded_gpu(int8_t* paths_d, int32_t* path_lengths_d, int64_t const* path_starts_d,
                       char const* sequences_d,
                       int64_t const* sequence_starts_d,
+                      int32_t const* scheduling_index_d,
+                      int32_t* scheduling_atomic_int_d,
                       int32_t n_alignments,
                       int32_t max_bandwidth,
                       batched_device_matrices<myers::WordType>& pv,
@@ -1003,10 +1033,18 @@ void myers_banded_gpu(int8_t* paths_d, int32_t* path_lengths_d, int64_t const* p
                       cudaStream_t stream)
 {
     const dim3 threads(warp_size, 1, 1);
-    const dim3 blocks(1, ceiling_divide<int32_t>(n_alignments, threads.y), 1);
+    const dim3 blocks(n_alignments, 1, 1);
+
+    // Work-around for missing cuda::atomic_ref in libcu++.
+    static_assert(sizeof(int32_t) == sizeof(cuda::atomic<int32_t, cuda::thread_scope_device>), "cuda::atomic<int32_t> needs to have the same size as int32_t.");
+    static_assert(alignof(int32_t) == alignof(cuda::atomic<int32_t, cuda::thread_scope_device>), "cuda::atomic<int32_t> needs to have the same alignment as int32_t.");
+    cuda::atomic<int32_t, cuda::thread_scope_device>* const scheduling_atomic_d = reinterpret_cast<cuda::atomic<int32_t, cuda::thread_scope_device>*>(scheduling_atomic_int_d);
+
+    myers::init_atomic<<<1, 1, 0, stream>>>(scheduling_atomic_d);
     myers::myers_banded_kernel<<<blocks, threads, 0, stream>>>(paths_d, path_lengths_d, path_starts_d,
                                                                pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(),
-                                                               sequences_d, sequence_starts_d, max_bandwidth, n_alignments);
+                                                               sequences_d, sequence_starts_d, scheduling_index_d, scheduling_atomic_d, max_bandwidth, n_alignments);
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
 } // namespace cudaaligner

@@ -26,6 +26,7 @@ namespace claraparabricks
 namespace genomeworks
 {
 #ifdef GW_CUDA_BEFORE_10_1
+#pragma GCC diagnostic ignored "-Wignored-qualifiers"
 template <typename T>
 struct numeric_limits
 {

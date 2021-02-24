@@ -31,6 +31,9 @@ set(SOURCES
     Test_CudamapperUtilsKmerFunctions.cpp
    )
 
+# This is a workaround for an "unnecessary parantheses" error raised when compiling the gmock.h header.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-parentheses")
+
 get_property(cudamapper_data_include_dir GLOBAL PROPERTY cudamapper_data_include_dir)
 include_directories(${cudamapper_data_include_dir})
 

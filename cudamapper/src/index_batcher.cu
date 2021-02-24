@@ -18,6 +18,8 @@
 
 #include <algorithm>
 
+#include <claraparabricks/genomeworks/cudamapper/utils.hpp>
+
 namespace claraparabricks
 {
 

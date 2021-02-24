@@ -29,12 +29,6 @@ if (enable_benchmarks AND NOT TARGET benchmark)
     add_subdirectory(3rdparty/benchmark EXCLUDE_FROM_ALL)
 endif()
 
-if (NOT TARGET spdlog)
-# FORCE spdlog to put out an install target, which we need
-    set(SPDLOG_INSTALL ON CACHE BOOL "Generate the install target." FORCE)
-    add_subdirectory(3rdparty/spdlog EXCLUDE_FROM_ALL)
-endif()
-
 if (NOT TARGET spoa)
     add_subdirectory(3rdparty/spoa EXCLUDE_FROM_ALL)
 # Don't show warnings when compiling the 3rd party library
@@ -48,5 +42,16 @@ add_library(cub INTERFACE IMPORTED)
 #cmake before 3.11, use the following for now:
 set_property(TARGET cub APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${CUB_DIR}")
 
+set(LIBCUDACXX_DIR ${PROJECT_SOURCE_DIR}/3rdparty/libcudacxx CACHE STRING "Path to libcu++ repo.")
+add_library(libcudacxx INTERFACE IMPORTED)
+set_property(TARGET libcudacxx APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${LIBCUDACXX_DIR}/include")
+
 set(KSEQPP_DIR ${PROJECT_SOURCE_DIR}/3rdparty/kseqpp/src CACHE STRING
     "Path to kseqpp repo")
+
+if (gw_build_htslib)
+    include(cmake/BuildHTSLib.cmake)
+    build_htslib_source()
+else()
+    message(STATUS "Not building htslib, overlap output to SAM & BAM unavailable. Enable with -Dgw_build_htslib=ON")
+endif()
