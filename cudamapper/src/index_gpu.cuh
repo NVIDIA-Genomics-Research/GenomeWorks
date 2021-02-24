@@ -19,12 +19,15 @@
 #include <algorithm>
 #include <vector>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 #include <thrust/adjacent_difference.h>
 #include <thrust/copy.h>
 #include <thrust/host_vector.h>
 #include <thrust/replace.h>
 #include <thrust/transform.h>
 #include <thrust/transform_scan.h>
+#pragma GCC diagnostic pop
 
 #include <claraparabricks/genomeworks/cudamapper/index.hpp>
 #include <claraparabricks/genomeworks/cudamapper/types.hpp>

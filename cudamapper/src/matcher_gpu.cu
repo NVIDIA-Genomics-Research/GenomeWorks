@@ -19,8 +19,11 @@
 #include <cassert>
 #include <numeric>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 #include <thrust/transform_scan.h>
 #include <thrust/execution_policy.h>
+#pragma GCC diagnostic pop
 
 #include <claraparabricks/genomeworks/utils/cudasort.cuh>
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
