@@ -15,7 +15,6 @@
 */
 
 #include "index_gpu.cuh"
-#include <thrust/transform_scan.h>
 
 namespace claraparabricks
 {

@@ -26,9 +26,15 @@ if [[ ${RUNNING_CI_LOCALLY} = true  ]]; then
     return 0
 fi
 
-# Skip upload if current branch is not master or starts with "dev-"
-if [ "${COMMIT_HASH}" != "master" ] && [[ ! "${COMMIT_HASH}" =~ ^dev-.+ ]]; then
+# Skip upload if current branch is not master or dev"
+if [ "${COMMIT_HASH}" != "master" ] && [[ "${COMMIT_HASH}" != "dev" ]]; then
     echo "Skipping PyPI upload - not master or development branch"
+    return 0
+fi
+
+# Disable nightly uploads
+if [[ "${COMMIT_HASH}" == "dev" ]]; then
+    echo "Skipping PyPI upload - Nightly uploads are disabled"
     return 0
 fi
 
