@@ -29,6 +29,7 @@ set(SOURCES
     Test_CudamapperOverlapper.cpp
     Test_CudamapperOverlapperTriggered.cu
     Test_CudamapperUtilsKmerFunctions.cpp
+    Test_CudamapperChainerUtils.cu
    )
 
 # This is a workaround for an "unnecessary parantheses" error raised when compiling the gmock.h header.

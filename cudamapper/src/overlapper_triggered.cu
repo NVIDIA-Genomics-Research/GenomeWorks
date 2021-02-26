@@ -24,11 +24,11 @@
 
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 
-#ifndef NDEBUG // only needed to check if input is sorted in assert
 #include <algorithm>
+
+#ifndef NDEBUG
 #include <thrust/host_vector.h>
 #endif
-
 namespace claraparabricks
 {
 
