@@ -36,7 +36,7 @@ namespace genomeworks
 namespace io
 {
 class FastaParser;
-}; // namespace io
+} // namespace io
 
 namespace cudamapper
 {

@@ -303,8 +303,8 @@ public:
                 uint16_t num_seqs = input_details_h_->window_details[poa].num_seqs;
                 for (int32_t i = 0; i < num_seqs; i++)
                 {
-                    char* c = reinterpret_cast<char*>(&(output_details_h_->multiple_sequence_alignments[(poa * max_sequences_per_poa_ + i) * batch_size_.max_consensus_size]));
-                    msa[poa].emplace_back(std::string(c));
+                    char* cl = reinterpret_cast<char*>(&(output_details_h_->multiple_sequence_alignments[(poa * max_sequences_per_poa_ + i) * batch_size_.max_consensus_size]));
+                    msa[poa].emplace_back(std::string(cl));
                 }
             }
         }

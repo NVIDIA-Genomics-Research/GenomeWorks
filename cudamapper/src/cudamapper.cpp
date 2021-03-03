@@ -35,7 +35,7 @@ StatusType Init()
     return StatusType::success;
 }
 
-}; // namespace cudamapper
+} // namespace cudamapper
 } // namespace cudamapper
 
 } // namespace genomeworks

@@ -34,7 +34,7 @@ template <typename Integer>
 __host__ __device__ constexpr inline Integer ceiling_divide(Integer i, Integer j)
 {
     static_assert(std::is_integral<Integer>::value, "Arguments have to be integer types.");
-    assert(i >= 0);
+    assert(std::is_unsigned<Integer>::value ? true : i >= 0);
     assert(j > 0);
     return (i + j - 1) / j;
 }

@@ -19,7 +19,6 @@
 #include <claraparabricks/genomeworks/cudamapper/types.hpp>
 #include <claraparabricks/genomeworks/io/fasta_parser.hpp>
 
-#include <thrust/execution_policy.h>
 #include <claraparabricks/genomeworks/utils/device_buffer.hpp>
 
 namespace claraparabricks

@@ -18,6 +18,7 @@
 
 #include <vector>
 #include <cassert>
+#include <cstdint>
 #include <iostream>
 
 namespace claraparabricks
@@ -34,7 +35,7 @@ class matrix
 {
 public:
     using value_type = T;
-    static inline bool error(int t)
+    static inline bool error(int32_t t)
     {
         printf("assert: %d", t);
         return false;
@@ -47,29 +48,29 @@ public:
     matrix& operator=(matrix&&) = default;
     ~matrix()                   = default;
 
-    matrix(int n, int m, T value = 0)
+    matrix(int32_t n, int32_t m, T value = 0)
         : data_(n * m, value)
-        , n(n)
-        , m(m)
+        , n_rows_(n)
+        , n_cols_(m)
     {
     }
 
-    inline T const& operator()(int i, int j) const
+    inline T const& operator()(int32_t i, int32_t j) const
     {
         assert(0 <= i || error(i));
-        assert(i < n || error(i));
+        assert(i < n_rows_ || error(i));
         assert(0 <= j || error(j));
-        assert(j < m || error(j));
-        return data_[i + n * j];
+        assert(j < n_cols_ || error(j));
+        return data_[i + n_rows_ * j];
     }
 
-    inline T& operator()(int i, int j)
+    inline T& operator()(int32_t i, int32_t j)
     {
         assert(0 <= i || error(i));
-        assert(i < n || error(i));
+        assert(i < n_rows_ || error(i));
         assert(0 <= j || error(j));
-        assert(j < m || error(j));
-        return data_[i + n * j];
+        assert(j < n_cols_ || error(j));
+        return data_[i + n_rows_ * j];
     }
 
     inline T* data()
@@ -79,28 +80,28 @@ public:
 
     inline void print(std::ostream& o) const
     {
-        for (int i = 0; i < n; ++i)
+        for (int32_t i = 0; i < n_rows_; ++i)
         {
             o << "\n";
-            for (int j = 0; j < m; ++j)
+            for (int32_t j = 0; j < n_cols_; ++j)
                 o << (*this)(i, j) << "\t";
         }
         o << std::endl;
     }
 
-    inline int num_rows() const
+    inline int32_t num_rows() const
     {
-        return n;
+        return n_rows_;
     }
-    inline int num_cols() const
+    inline int32_t num_cols() const
     {
-        return m;
+        return n_cols_;
     }
 
 private:
     std::vector<T> data_;
-    int n = 0;
-    int m = 0;
+    int32_t n_rows_ = 0;
+    int32_t n_cols_ = 0;
 };
 
 template <typename T>
@@ -108,10 +109,10 @@ inline bool operator==(matrix<T> const& a, matrix<T> const& b)
 {
     if (a.num_rows() != b.num_rows() || a.num_cols() != b.num_cols())
         return false;
-    int n = a.num_rows();
-    int m = a.num_cols();
-    for (int i = 0; i < n; ++i)
-        for (int j = 0; j < m; ++j)
+    const int32_t n = a.num_rows();
+    const int32_t m = a.num_cols();
+    for (int32_t i = 0; i < n; ++i)
+        for (int32_t j = 0; j < m; ++j)
         {
             if (a(i, j) != b(i, j))
                 return false;

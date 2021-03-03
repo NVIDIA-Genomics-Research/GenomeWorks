@@ -140,7 +140,7 @@ std::vector<AlignmentTestData> create_alignment_test_cases()
     test_cases.push_back(data);
 
     return test_cases;
-};
+}
 
 class TestAlignmentImpl : public ::testing::TestWithParam<AlignmentTestData>
 {

@@ -21,7 +21,10 @@
 #include <random>
 #include <vector>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
 #include <thrust/host_vector.h>
+#pragma GCC diagnostic pop
 
 #include <claraparabricks/genomeworks/utils/cudasort.cuh>
 #include <claraparabricks/genomeworks/utils/device_buffer.hpp>

@@ -21,6 +21,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wshadow"
 #include <thrust/transform_scan.h>
 #include <thrust/execution_policy.h>
 #pragma GCC diagnostic pop

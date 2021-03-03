@@ -142,7 +142,7 @@ std::vector<AlignerTestData> create_aligner_test_cases()
     std::transform(test_cases.begin(), test_cases.end(), std::back_inserter(test_cases_final), [](AlignerTestData td) { td.algorithm = AlignmentAlgorithm::HirschbergMyers; return td; });
 
     return test_cases_final;
-};
+}
 
 class TestAlignerGlobal : public ::testing::TestWithParam<AlignerTestData>
 {
@@ -178,7 +178,7 @@ std::vector<AlignerTestData> create_aligner_perf_test_cases()
     test_cases.push_back(data);
 
     return test_cases;
-};
+}
 
 class TestAlignerGlobalImplPerf : public TestAlignerGlobal
 {
