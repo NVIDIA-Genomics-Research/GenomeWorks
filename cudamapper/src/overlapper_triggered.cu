@@ -19,14 +19,20 @@
 #include <fstream>
 #include <cstdlib>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
 #include <cub/cub.cuh>
 #include <thrust/execution_policy.h>
+#pragma GCC diagnostic pop
 
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 
 #ifndef NDEBUG // only needed to check if input is sorted in assert
 #include <algorithm>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
 #include <thrust/host_vector.h>
+#pragma GCC diagnostic pop
 #endif
 
 namespace claraparabricks
@@ -142,24 +148,19 @@ struct FuseOverlapOp
     }
 };
 
-struct FilterOverlapOp
+class FilterOverlapOp
 {
-    size_t min_residues;
-    size_t min_overlap_len;
-    size_t min_bases_per_residue;
-    float min_overlap_fraction;
-    bool indexes_identical;
-
+public:
     __host__ __device__ __forceinline__ FilterOverlapOp(size_t min_residues,
                                                         size_t min_overlap_len,
                                                         size_t min_bases_per_residue,
                                                         float min_overlap_fraction,
                                                         bool indexes_identical)
-        : min_residues(min_residues)
-        , min_overlap_len(min_overlap_len)
-        , min_bases_per_residue(min_bases_per_residue)
-        , min_overlap_fraction(min_overlap_fraction)
-        , indexes_identical(indexes_identical)
+        : min_residues_(min_residues)
+        , min_overlap_len_(min_overlap_len)
+        , min_bases_per_residue_(min_bases_per_residue)
+        , min_overlap_fraction_(min_overlap_fraction)
+        , indexes_identical_(indexes_identical)
     {
     }
 
@@ -169,16 +170,23 @@ struct FilterOverlapOp
         const auto target_overlap_length = overlap.target_end_position_in_read_ - overlap.target_start_position_in_read_;
         const auto query_overlap_length  = overlap.query_end_position_in_read_ - overlap.query_start_position_in_read_;
         const auto overlap_length        = max(target_overlap_length, query_overlap_length);
-        const bool self_mapping          = (overlap.query_read_id_ == overlap.target_read_id_) && indexes_identical;
+        const bool self_mapping          = (overlap.query_read_id_ == overlap.target_read_id_) && indexes_identical_;
 
-        return ((overlap.num_residues_ >= min_residues) &&
-                ((overlap_length / overlap.num_residues_) < min_bases_per_residue) &&
-                (query_overlap_length >= min_overlap_len) &&
-                (target_overlap_length >= min_overlap_len) &&
+        return ((overlap.num_residues_ >= min_residues_) &&
+                ((overlap_length / overlap.num_residues_) < min_bases_per_residue_) &&
+                (query_overlap_length >= min_overlap_len_) &&
+                (target_overlap_length >= min_overlap_len_) &&
                 (!self_mapping) &&
-                ((static_cast<float>(target_overlap_length) / static_cast<float>(overlap_length)) > min_overlap_fraction) &&
-                ((static_cast<float>(query_overlap_length) / static_cast<float>(overlap_length)) > min_overlap_fraction));
+                ((static_cast<float>(target_overlap_length) * 1.f / static_cast<float>(overlap_length)) > min_overlap_fraction_) &&
+                ((static_cast<float>(query_overlap_length) * 1.f / static_cast<float>(overlap_length)) > min_overlap_fraction_));
     }
+
+private:
+    size_t min_residues_;
+    size_t min_overlap_len_;
+    size_t min_bases_per_residue_;
+    float min_overlap_fraction_;
+    bool indexes_identical_;
 };
 
 struct CreateOverlap

@@ -222,8 +222,8 @@ ApplicationParameters::ApplicationParameters(int argc, char* argv[])
     max_cached_memory_bytes = get_max_cached_memory_bytes();
 }
 
-void ApplicationParameters::set_filtering_parameter(std::shared_ptr<io::FastaParser>& query_parser,
-                                                    std::shared_ptr<io::FastaParser>& target_parser,
+void ApplicationParameters::set_filtering_parameter(const std::shared_ptr<io::FastaParser> query_parser_local,
+                                                    const std::shared_ptr<io::FastaParser> target_parser_local,
                                                     const bool custom_filtering_parameter = false)
 {
 
@@ -231,15 +231,15 @@ void ApplicationParameters::set_filtering_parameter(std::shared_ptr<io::FastaPar
     const number_of_basepairs_t minimum_for_automatic_filtering = 500000; // Require at least 0.5Mbp of sequence for filtering by default
     number_of_reads_t query_index                               = 0;
     number_of_reads_t target_index                              = 0;
-    while (total_sequence_length < minimum_for_automatic_filtering && query_index < query_parser->get_num_seqences())
+    while (total_sequence_length < minimum_for_automatic_filtering && query_index < query_parser_local->get_num_seqences())
     {
-        total_sequence_length += get_size<number_of_basepairs_t>(query_parser->get_sequence_by_id(query_index).seq);
+        total_sequence_length += get_size<number_of_basepairs_t>(query_parser_local->get_sequence_by_id(query_index).seq);
         ++query_index;
     }
 
-    while (total_sequence_length < minimum_for_automatic_filtering && target_index < target_parser->get_num_seqences())
+    while (total_sequence_length < minimum_for_automatic_filtering && target_index < target_parser_local->get_num_seqences())
     {
-        total_sequence_length += get_size<number_of_basepairs_t>(target_parser->get_sequence_by_id(target_index).seq);
+        total_sequence_length += get_size<number_of_basepairs_t>(target_parser_local->get_sequence_by_id(target_index).seq);
         ++target_index;
     }
 
@@ -249,25 +249,25 @@ void ApplicationParameters::set_filtering_parameter(std::shared_ptr<io::FastaPar
     }
 }
 
-void ApplicationParameters::create_input_parsers(std::shared_ptr<io::FastaParser>& query_parser,
-                                                 std::shared_ptr<io::FastaParser>& target_parser)
+void ApplicationParameters::create_input_parsers(std::shared_ptr<io::FastaParser>& query_parser_local,
+                                                 std::shared_ptr<io::FastaParser>& target_parser_local)
 {
-    assert(query_parser == nullptr);
-    assert(target_parser == nullptr);
+    assert(query_parser_local == nullptr);
+    assert(target_parser_local == nullptr);
 
-    query_parser = io::create_kseq_fasta_parser(query_filepath, kmer_size + windows_size - 1);
+    query_parser_local = io::create_kseq_fasta_parser(query_filepath, kmer_size + windows_size - 1);
 
     if (all_to_all)
     {
-        target_parser = query_parser;
+        target_parser_local = query_parser_local;
     }
     else
     {
-        target_parser = io::create_kseq_fasta_parser(target_filepath, kmer_size + windows_size - 1);
+        target_parser_local = io::create_kseq_fasta_parser(target_filepath, kmer_size + windows_size - 1);
     }
 
-    std::cerr << "Query file: " << query_filepath << ", number of reads: " << query_parser->get_num_seqences() << std::endl;
-    std::cerr << "Target file: " << target_filepath << ", number of reads: " << target_parser->get_num_seqences() << std::endl;
+    std::cerr << "Query file: " << query_filepath << ", number of reads: " << query_parser_local->get_num_seqences() << std::endl;
+    std::cerr << "Target file: " << target_filepath << ", number of reads: " << target_parser_local->get_num_seqences() << std::endl;
 }
 
 int64_t ApplicationParameters::get_max_cached_memory_bytes()

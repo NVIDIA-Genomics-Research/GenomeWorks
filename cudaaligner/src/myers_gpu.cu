@@ -44,6 +44,7 @@ namespace cudaaligner
 {
 
 constexpr int32_t warp_size = 32;
+constexpr int32_t word_size = sizeof(myers::WordType) * CHAR_BIT;
 
 namespace myers
 {
@@ -911,8 +912,6 @@ __global__ void myers_banded_kernel(
 
 int32_t myers_compute_edit_distance(std::string const& target, std::string const& query)
 {
-    constexpr int32_t warp_size = 32;
-    constexpr int32_t word_size = sizeof(myers::WordType) * CHAR_BIT;
     if (get_size(query) == 0)
         return get_size(target);
 
@@ -944,9 +943,6 @@ int32_t myers_compute_edit_distance(std::string const& target, std::string const
 
 matrix<int32_t> myers_get_full_score_matrix(std::string const& target, std::string const& query)
 {
-    constexpr int32_t warp_size = 32;
-    constexpr int32_t word_size = sizeof(myers::WordType) * CHAR_BIT;
-
     if (get_size(target) == 0)
     {
         matrix<int32_t> r(get_size(query) + 1, 1);

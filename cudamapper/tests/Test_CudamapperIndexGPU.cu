@@ -16,8 +16,11 @@
 
 #include "gtest/gtest.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#pragma GCC diagnostic pop
 
 #include "cudamapper_file_location.hpp"
 #include "../src/index_gpu.cuh"

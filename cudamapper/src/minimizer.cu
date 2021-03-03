@@ -17,8 +17,11 @@
 #include <limits>
 #include "minimizer.hpp"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
 #include <thrust/scan.h>
 #include <thrust/execution_policy.h>
+#pragma GCC diagnostic pop
 
 namespace claraparabricks
 {

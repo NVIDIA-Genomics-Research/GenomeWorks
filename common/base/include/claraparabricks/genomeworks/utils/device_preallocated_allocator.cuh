@@ -155,8 +155,8 @@ private:
         void* ptr = nullptr;
         GW_CU_CHECK_ERR(cudaMalloc(&ptr, buffer_size));
         auto ret_val = std::unique_ptr<char, void (*)(char*)>(static_cast<char*>(ptr),
-                                                              [](char* ptr) {
-                                                                  GW_CU_ABORT_ON_ERR(cudaFree(ptr));
+                                                              [](char* p) {
+                                                                  GW_CU_ABORT_ON_ERR(cudaFree(p));
                                                               });
         return ret_val;
     }

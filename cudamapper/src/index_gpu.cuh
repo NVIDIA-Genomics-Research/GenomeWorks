@@ -21,6 +21,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wshadow"
 #include <thrust/adjacent_difference.h>
 #include <thrust/copy.h>
 #include <thrust/host_vector.h>

@@ -27,11 +27,14 @@
 #include <claraparabricks/genomeworks/utils/pinned_host_vector.hpp>
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
 #include <thrust/system/cuda/execution_policy.h>
 #include <thrust/sort.h>
 #include <thrust/unique.h>
 
 #include <cub/device/device_scan.cuh>
+#pragma GCC diagnostic pop
 
 namespace claraparabricks
 {
