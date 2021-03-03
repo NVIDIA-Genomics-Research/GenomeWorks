@@ -167,6 +167,6 @@ TEST_P(TestApproximateBandedMyers, EditDistanceMonotonicallyDecreasesWithBandWid
             last_bw            = max_bw;
         }
     }
-};
+}
 
 INSTANTIATE_TEST_SUITE_P(TestApproximateBandedMyersInstance, TestApproximateBandedMyers, ::testing::ValuesIn(create_band_test_cases()));

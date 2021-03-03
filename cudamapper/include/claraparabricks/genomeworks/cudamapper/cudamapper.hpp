@@ -35,8 +35,8 @@ enum class StatusType
 };
 
 StatusType Init();
-}; // namespace cudamapper
-}; // namespace genomeworks
+} // namespace cudamapper
+} // namespace genomeworks
 
 } // namespace claraparabricks
 
