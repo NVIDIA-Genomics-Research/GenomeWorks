@@ -18,6 +18,7 @@
 
 #include <vector>
 #include <cassert>
+#include <cstdint>
 #include <iostream>
 
 namespace claraparabricks
