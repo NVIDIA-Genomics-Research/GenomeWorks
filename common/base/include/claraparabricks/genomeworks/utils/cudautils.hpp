@@ -25,6 +25,7 @@
 #include <cassert>
 #include <string>
 #include <memory>
+#include <limits>
 
 #ifdef GW_PROFILING
 #include <nvToolsExt.h>
@@ -232,13 +233,23 @@ public:
     explicit scoped_device_switch(int32_t device_id)
     {
         GW_CU_CHECK_ERR(cudaGetDevice(&device_id_before_));
-        GW_CU_CHECK_ERR(cudaSetDevice(device_id));
+        if (device_id_before_ != device_id)
+        {
+            GW_CU_CHECK_ERR(cudaSetDevice(device_id));
+        }
+        else
+        {
+            device_id_before_ = std::numeric_limits<int32_t>::max();
+        }
     }
 
     /// \brief Destructor switches back to original device ID
     ~scoped_device_switch()
     {
-        cudaSetDevice(device_id_before_);
+        if (device_id_before_ != std::numeric_limits<int32_t>::max())
+        {
+            cudaSetDevice(device_id_before_);
+        }
     }
 
     scoped_device_switch()                            = delete;
