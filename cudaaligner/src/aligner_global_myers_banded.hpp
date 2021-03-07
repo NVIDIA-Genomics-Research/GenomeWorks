@@ -38,6 +38,7 @@ public:
     void reset() override;
 
     StatusType add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length, bool reverse_complement_query, bool reverse_complement_target) override;
+    StatusType add_alignment(int32_t max_bandwidth, const char* query, int32_t query_length, const char* target, int32_t target_length, bool reverse_complement_query, bool reverse_complement_target) override;
 
     const std::vector<std::shared_ptr<Alignment>>& get_alignments() const override
     {

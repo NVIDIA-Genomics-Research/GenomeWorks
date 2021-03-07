@@ -854,14 +854,12 @@ __global__ void myers_banded_kernel(
     batched_device_matrices<WordType>::device_interface* mvi,
     batched_device_matrices<int32_t>::device_interface* scorei,
     batched_device_matrices<WordType>::device_interface* query_patternsi,
-    char const* sequences_d, int64_t const* sequence_starts_d,
+    char const* sequences_d, int64_t const* sequence_starts_d, int32_t const* max_bandwidths_d,
     const int32_t* scheduling_index_d, cuda::atomic<int32_t, cuda::thread_scope_device>* scheduling_atomic_d,
-    const int32_t max_bandwidth,
     const int32_t n_alignments)
 {
     assert(warpSize == warp_size);
     assert(threadIdx.x < warp_size);
-    assert(max_bandwidth % word_size != 1); // we need at least two bits in the last word
 
     if (blockIdx.x >= n_alignments)
         return;
@@ -869,11 +867,13 @@ __global__ void myers_banded_kernel(
     assert(alignment_idx < n_alignments);
     if (alignment_idx >= n_alignments)
         return;
-    const char* const query   = sequences_d + sequence_starts_d[2 * alignment_idx];
-    const char* const target  = sequences_d + sequence_starts_d[2 * alignment_idx + 1];
-    const int32_t query_size  = target - query;
-    const int32_t target_size = sequences_d + sequence_starts_d[2 * alignment_idx + 2] - target;
-    const int32_t n_words     = ceiling_divide(query_size, word_size);
+    const char* const query     = sequences_d + sequence_starts_d[2 * alignment_idx];
+    const char* const target    = sequences_d + sequence_starts_d[2 * alignment_idx + 1];
+    const int32_t query_size    = target - query;
+    const int32_t target_size   = sequences_d + sequence_starts_d[2 * alignment_idx + 2] - target;
+    const int32_t n_words       = ceiling_divide(query_size, word_size);
+    const int32_t max_bandwidth = max_bandwidths_d[alignment_idx];
+    assert(max_bandwidth % word_size != 1); // we need at least two bits in the last word
     if (max_bandwidth - 1 < abs(target_size - query_size) && query_size != 0 && target_size != 0)
     {
         if (threadIdx.x == 0)
@@ -1095,10 +1095,10 @@ void myers_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length
 void myers_banded_gpu(int8_t* paths_d, int32_t* path_counts_d, int32_t* path_lengths_d, int64_t const* path_starts_d,
                       char const* sequences_d,
                       int64_t const* sequence_starts_d,
+                      int32_t const* max_bandwidths_d,
                       int32_t const* scheduling_index_d,
                       int32_t* scheduling_atomic_int_d,
                       int32_t n_alignments,
-                      int32_t max_bandwidth,
                       batched_device_matrices<myers::WordType>& pv,
                       batched_device_matrices<myers::WordType>& mv,
                       batched_device_matrices<int32_t>& score,
@@ -1116,7 +1116,7 @@ void myers_banded_gpu(int8_t* paths_d, int32_t* path_counts_d, int32_t* path_len
     myers::init_atomic<<<1, 1, 0, stream>>>(scheduling_atomic_d);
     myers::myers_banded_kernel<<<blocks, threads, 0, stream>>>(paths_d, path_counts_d, path_lengths_d, path_starts_d,
                                                                pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(),
-                                                               sequences_d, sequence_starts_d, scheduling_index_d, scheduling_atomic_d, max_bandwidth, n_alignments);
+                                                               sequences_d, sequence_starts_d, max_bandwidths_d, scheduling_index_d, scheduling_atomic_d, n_alignments);
     GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
