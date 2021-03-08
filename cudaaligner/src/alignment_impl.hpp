@@ -117,6 +117,16 @@ public:
         return alignment_;
     }
 
+    const std::vector<int8_t>& get_actions() const override
+    {
+        return action_;
+    }
+
+    const std::vector<uint8_t>& get_runlengths() const override
+    {
+        return runlength_;
+    }
+
     /// \brief Get the edit distance corrsponding to the alignment
     ///
     /// Returns the number of edits of the found alignment.

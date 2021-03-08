@@ -91,6 +91,8 @@ public:
     /// \return Vector of AlignmentState encoding sequence of match,
     ///         mistmatch and insertions in alignment.
     virtual const std::vector<AlignmentState>& get_alignment() const = 0;
+    virtual const std::vector<int8_t>& get_actions() const           = 0;
+    virtual const std::vector<uint8_t>& get_runlengths() const       = 0;
 
     /// \brief Get the edit distance corrsponding to the alignment
     ///
