@@ -585,7 +585,7 @@ __device__ int32_t myers_backtrace_banded(int8_t* path, uint8_t* const path_coun
             prev_r  = static_cast<int8_t>(AlignmentState::deletion);
             r_count = 0;
         }
-        const int32_t decrement = max(i, static_cast<int32_t>(r_count_max) - static_cast<int32_t>(r_count));
+        const int32_t decrement = min(i, static_cast<int32_t>(r_count_max) - static_cast<int32_t>(r_count));
         r_count += static_cast<uint8_t>(decrement);
         i -= decrement;
     }
@@ -602,7 +602,7 @@ __device__ int32_t myers_backtrace_banded(int8_t* path, uint8_t* const path_coun
             prev_r  = static_cast<int8_t>(AlignmentState::insertion);
             r_count = 0;
         }
-        const int32_t decrement = max(j, static_cast<int32_t>(r_count_max) - static_cast<int32_t>(r_count));
+        const int32_t decrement = min(j, static_cast<int32_t>(r_count_max) - static_cast<int32_t>(r_count));
         r_count += static_cast<uint8_t>(decrement);
         j -= decrement;
     }
