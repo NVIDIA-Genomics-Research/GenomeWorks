@@ -312,9 +312,6 @@ StatusType AlignerGlobalMyersBanded::align_all()
     const auto& seq_h           = data_->seq_h;
     const auto& seq_starts_h    = data_->seq_starts_h;
     auto& scheduling_index_h    = data_->scheduling_index_h;
-    auto& results_h             = data_->results_h;
-    auto& result_counts_h       = data_->result_counts_h;
-    auto& result_lengths_h      = data_->result_lengths_h;
     const auto& result_starts_h = data_->result_starts_h;
 
     auto& seq_d              = data_->seq_d;
@@ -360,31 +357,35 @@ StatusType AlignerGlobalMyersBanded::align_all()
                      seq_d.data(), seq_starts_d.data(), scheduling_index_d.data(), data_->scheduling_atomic_d.data(), n_alignments, max_bandwidth_,
                      data_->pvs, data_->mvs, data_->scores, data_->query_patterns,
                      stream_);
-
-    result_lengths_h.clear();
-    result_lengths_h.resize(n_alignments);
-
-    device_copy_n_async(results_d.data(), result_starts_h.back(), results_h.data(), stream_);
-    device_copy_n_async(result_counts_d.data(), result_starts_h.back(), result_counts_h.data(), stream_);
-    device_copy_n_async(result_lengths_d.data(), n_alignments, result_lengths_h.data(), stream_);
-
     return StatusType::success;
 }
 
 StatusType AlignerGlobalMyersBanded::sync_alignments()
 {
     GW_NVTX_RANGE(profiler, "AlignerGlobalMyersBanded::sync");
+    using cudautils::device_copy_n_async;
+    const int32_t n_alignments  = get_size(alignments_);
+    const auto& result_starts_h = data_->result_starts_h;
+    auto& results_h             = data_->results_h;
+    auto& result_counts_h       = data_->result_counts_h;
+    auto& result_lengths_h      = data_->result_lengths_h;
+    result_lengths_h.clear();
+    result_lengths_h.resize(n_alignments);
+
+    device_copy_n_async(data_->results_d.data(), result_starts_h.back(), results_h.data(), stream_);
+    device_copy_n_async(data_->result_counts_d.data(), result_starts_h.back(), result_counts_h.data(), stream_);
+    device_copy_n_async(data_->result_lengths_d.data(), n_alignments, result_lengths_h.data(), stream_);
+
     scoped_device_switch dev(device_id_);
     GW_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
 
     GW_NVTX_RANGE(profiler_post, "AlignerGlobalMyersBanded::post-sync");
-    const int32_t n_alignments = get_size<int32_t>(alignments_);
     for (int32_t i = 0; i < n_alignments; ++i)
     {
-        const int8_t* r_begin         = data_->results_h.data() + data_->result_starts_h[i];
-        const int8_t* r_end           = r_begin + std::abs(data_->result_lengths_h[i]);
-        const uint8_t* r_counts_begin = data_->result_counts_h.data() + data_->result_starts_h[i];
-        const uint8_t* r_counts_end   = r_counts_begin + std::abs(data_->result_lengths_h[i]);
+        const int8_t* r_begin         = results_h.data() + result_starts_h[i];
+        const int8_t* r_end           = r_begin + std::abs(result_lengths_h[i]);
+        const uint8_t* r_counts_begin = result_counts_h.data() + result_starts_h[i];
+        const uint8_t* r_counts_end   = r_counts_begin + std::abs(result_lengths_h[i]);
         assert(std::distance(r_begin, r_end) == std::distance(r_counts_begin, r_counts_end));
 
         if (r_begin != r_end || (alignments_[i]->get_query_sequence().empty() && alignments_[i]->get_target_sequence().empty()))
