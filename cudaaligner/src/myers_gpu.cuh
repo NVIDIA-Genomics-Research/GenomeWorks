@@ -50,7 +50,7 @@ void myers_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length
                batched_device_matrices<myers::WordType>& query_patterns,
                cudaStream_t stream);
 
-void myers_banded_gpu(int8_t* paths_d, uint8_t* path_counts_d, int32_t* path_lengths_d, int64_t const* path_starts_d,
+void myers_banded_gpu(int8_t* paths_d, int32_t* path_counts_d, int32_t* path_lengths_d, int64_t const* path_starts_d,
                       char const* sequences_d,
                       int64_t const* sequence_starts_d,
                       int32_t const* scheduling_index_d,

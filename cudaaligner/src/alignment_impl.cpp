@@ -95,8 +95,32 @@ void append_to_cigar(std::string& cigar, const int32_t runlength, const char c)
     cigar.append(1, c);
 }
 
-template <typename CigarConversionFunction>
-std::string convert_to_cigar_impl(const std::vector<int8_t>& action, const std::vector<uint8_t>& runlength, CigarConversionFunction convert_to_cigar)
+std::string convert_to_extended_cigar_impl(const std::vector<int8_t>& action, const std::vector<int32_t>& runlength)
+{
+    std::string cigar;
+    const int32_t length = get_size<int32_t>(action);
+    assert(get_size<int32_t>(runlength) == length);
+
+    if (length < 1)
+    {
+        return cigar;
+    }
+    cigar.reserve(3 * length); // I guess on average we'll get 2-digit run-lengths and 1 char for an action entry.
+
+    auto ait        = begin(action);
+    const auto aend = end(action);
+    auto rit        = begin(runlength);
+    while (ait < aend)
+    {
+        const char cigar_state = alignment_state_to_cigar_state_extended(*ait);
+        append_to_cigar(cigar, *rit, cigar_state);
+        ++ait;
+        ++rit;
+    }
+    return cigar;
+}
+
+std::string convert_to_basic_cigar_impl(const std::vector<int8_t>& action, const std::vector<int32_t>& runlength)
 {
     std::string cigar;
     const int32_t length = get_size<int32_t>(action);
@@ -107,11 +131,11 @@ std::string convert_to_cigar_impl(const std::vector<int8_t>& action, const std::
     }
     cigar.reserve(3 * length); // I guess on average we'll get 2-digit run-lengths and 1 char for an action entry.
 
-    char last_cigar_state    = convert_to_cigar(action[0]);
+    char last_cigar_state    = alignment_state_to_cigar_state(action[0]);
     int32_t count_last_state = runlength[0];
     for (int32_t i = 1; i < length; ++i)
     {
-        const char cigar_state = convert_to_cigar(action[i]);
+        const char cigar_state = alignment_state_to_cigar_state(action[i]);
         if (cigar_state == last_cigar_state)
         {
             count_last_state += runlength[i];
@@ -176,7 +200,7 @@ std::string AlignmentImpl::convert_to_cigar(const CigarFormat format) const
     {
         if (!action_.empty())
         {
-            return convert_to_cigar_impl(action_, runlength_, alignment_state_to_cigar_state_extended);
+            return convert_to_extended_cigar_impl(action_, runlength_);
         }
         return convert_to_cigar_impl(alignment_, alignment_state_to_cigar_state_extended);
     }
@@ -184,7 +208,7 @@ std::string AlignmentImpl::convert_to_cigar(const CigarFormat format) const
     {
         if (!action_.empty())
         {
-            return convert_to_cigar_impl(action_, runlength_, alignment_state_to_cigar_state);
+            return convert_to_basic_cigar_impl(action_, runlength_);
         }
         return convert_to_cigar_impl(alignment_, alignment_state_to_cigar_state);
     }
