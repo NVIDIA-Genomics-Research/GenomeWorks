@@ -222,7 +222,6 @@ StatusType AlignerGlobalMyersBanded::add_alignment(const char* query, int32_t qu
     if (query == nullptr || target == nullptr)
         return StatusType::generic_error;
 
-    scoped_device_switch dev(device_id_);
     auto& seq_h           = data_->seq_h;
     auto& seq_starts_h    = data_->seq_starts_h;
     auto& result_starts_h = data_->result_starts_h;
