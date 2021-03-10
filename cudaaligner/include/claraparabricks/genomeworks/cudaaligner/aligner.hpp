@@ -38,6 +38,37 @@ class Alignment;
 /// \addtogroup cudaaligner
 /// \{
 
+/// \struct DeviceAlignmentsPtrs
+///
+/// A structure which stores all pointer to access alignment results from an
+/// Aligner object on the GPU.
+/// Unless noted otherwise in the Aligner, the pointers point to memory which
+/// is owned and managed by the Aligner.
+/// Unless noted otherwise in the Aligner, the stucture can be obtained after
+/// a call to aligner.align_all(). However, note that align_all() usually
+/// launches an asynchronous operation on the device.
+/// While the pointers can already be obtained while the asynchronous operation
+/// is still in progress, any operation on the memory pointed to by the pointers
+/// needs to be queued in the Aligner's CUDA stream. Failing to do so will lead
+/// to a data race. The stream can be obtained via aligner.get_stream().
+///
+/// The alignments are runlength-encoded. The actions ptr points to the alignment
+/// action (match, mismatch, insertion, deletion), and the runlengths ptr the
+/// runlength of the action at the same position in the actions buffer relative
+/// to their respective beginning.
+/// The actions and runlengths buffers contain valid data only at the ranges
+/// given by the entries of the starts and lengths arrays (see their description).
+/// Data outside these ranges are invalid and may be uninitialized.
+struct DeviceAlignmentsPtrs
+{
+    const int8_t* actions;     ///< Ptr to a buffer of length total_length containing the sequence of alignment actions (see AlignmentState) for all performed alignments.
+    const int32_t* runlengths; ///< Ptr to a buffer of length total_length containing the number of repetions of the alignment action at the same position in the actions array.
+    const int64_t* starts;     ///< Ptr to an array of length n_alignments+1 containing the starting index of alignment i at position i. The last entry at position n_alignments corresponds to total_length.
+    const int32_t* lengths;    ///< Ptr to an array of length n_alignments containing the length of alignment i as abs(lengths[i]). WARNING: Entries may be signed!
+    int64_t total_length;      ///< The total length of the actions and runlengths arrays
+    int32_t n_alignments;      ///< The number of alignment results, i.e. the length of starts and lengths.
+};
+
 /// \class Aligner
 /// CUDA Alignment object
 class Aligner
@@ -78,8 +109,26 @@ public:
     /// \return Vector of Alignments.
     virtual const std::vector<std::shared_ptr<Alignment>>& get_alignments() const = 0;
 
+    /// \brief Returns pointers to alignment data on the device.
+    ///
+    /// Retuerns a DeviceAlignments object - a struct containing pointers to the device data.
+    /// Note that the data's lifetime is managed by the aligner object. Therefore, the
+    /// pointers may be invalidated by a reset() or destruction of the alignment object.
+    ///
+    /// \return struct with device pointers.
+    virtual DeviceAlignmentsPtrs get_alignments_device() const = 0;
+
     /// \brief Reset aligner object.
     virtual void reset() = 0;
+
+    /// \brief Get the assigned CUDA stream
+    virtual cudaStream_t get_stream() const = 0;
+
+    /// \brief Get the assigned CUDA device id (see cudaGetDevice())
+    virtual int32_t get_device() const = 0;
+
+    /// \brief Get the assigned device allocator
+    virtual DefaultDeviceAllocator get_device_allocator() const = 0;
 };
 
 /// A special CUDA Aligner that works with a fixed band of the Needleman-Wunsch matrix.

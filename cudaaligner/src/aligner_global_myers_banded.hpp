@@ -44,6 +44,20 @@ public:
         return alignments_;
     }
 
+    DeviceAlignmentsPtrs get_alignments_device() const override;
+
+    cudaStream_t get_stream() const override
+    {
+        return stream_;
+    }
+
+    int32_t get_device() const override
+    {
+        return device_id_;
+    }
+
+    DefaultDeviceAllocator get_device_allocator() const override;
+
     void reset_max_bandwidth(int32_t max_bandwidth) override;
 
 private:

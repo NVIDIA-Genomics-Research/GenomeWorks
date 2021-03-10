@@ -406,6 +406,18 @@ void AlignerGlobalMyersBanded::reset()
     alignments_.clear();
 }
 
+DeviceAlignmentsPtrs AlignerGlobalMyersBanded::get_alignments_device() const
+{
+    DeviceAlignmentsPtrs r;
+    r.starts       = data_->result_starts_d.data();
+    r.lengths      = data_->result_lengths_d.data();
+    r.actions      = data_->results_d.data();
+    r.runlengths   = data_->result_counts_d.data();
+    r.total_length = data_->result_starts_h.back();
+    r.n_alignments = get_size<int32_t>(alignments_);
+    return r;
+}
+
 void AlignerGlobalMyersBanded::reset_max_bandwidth(const int32_t max_bandwidth)
 {
     assert(max_device_memory_ >= 0);
@@ -433,6 +445,11 @@ void AlignerGlobalMyersBanded::reset_data()
     data_->mvs.clear();
     data_->scores.clear();
     data_->query_patterns.clear();
+}
+
+DefaultDeviceAllocator AlignerGlobalMyersBanded::get_device_allocator() const
+{
+    return data_->seq_d.get_allocator();
 }
 
 } // namespace cudaaligner

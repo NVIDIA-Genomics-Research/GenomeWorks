@@ -51,6 +51,35 @@ public:
         return alignments_;
     }
 
+    DeviceAlignmentsPtrs get_alignments_device() const override
+    {
+        assert(false);
+        // TODO implement for other aligners
+        DeviceAlignmentsPtrs r;
+        r.starts       = nullptr;
+        r.lengths      = nullptr;
+        r.actions      = nullptr;
+        r.runlengths   = nullptr;
+        r.total_length = 0;
+        r.n_alignments = 0;
+        return r;
+    }
+
+    cudaStream_t get_stream() const override
+    {
+        return stream_;
+    }
+
+    int32_t get_device() const override
+    {
+        return device_id_;
+    }
+
+    DefaultDeviceAllocator get_device_allocator() const override
+    {
+        return sequences_d_.get_allocator();
+    }
+
     virtual int32_t num_alignments() const
     {
         return get_size(alignments_);
