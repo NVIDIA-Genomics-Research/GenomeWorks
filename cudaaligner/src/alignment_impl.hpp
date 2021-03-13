@@ -101,10 +101,10 @@ public:
     ///
     /// \param alignment Alignment between sequences
     /// \param is_optimal true if the alignment is optimal, false if it is an approximation
-    virtual void set_alignment(const std::vector<int8_t>& action, const std::vector<int32_t>& runlength, bool is_optimal)
+    virtual void set_alignment(std::vector<int8_t>&& action, std::vector<int32_t>&& runlength, bool is_optimal)
     {
-        action_     = action;
-        runlength_  = runlength;
+        action_     = std::move(action);
+        runlength_  = std::move(runlength);
         is_optimal_ = is_optimal;
     }
 
