@@ -25,6 +25,7 @@
 #include <cassert>
 #include <string>
 #include <memory>
+#include <limits>
 
 #ifdef GW_PROFILING
 #include <nvToolsExt.h>
@@ -62,6 +63,13 @@ namespace genomeworks
 namespace cudautils
 {
 
+/// Logs a CUDA error and aborts the program.
+/// \ingroup cudautils
+/// \param code The CUDA error code
+/// \param file Filename of the calling function
+/// \param line File line number of the calling function
+[[noreturn]] void print_error_and_abort(cudaError_t code, const char* file, int line);
+
 /// gpu_assert
 /// Logs and/or exits on cuda error
 /// \ingroup cudautils
@@ -83,29 +91,7 @@ inline void gpu_assert(cudaError_t code, const char* file, int line)
 
     if (code != cudaSuccess)
     {
-        std::string err = "GPU Error:: " + std::string(cudaGetErrorString(code));
-        if (code == cudaErrorNoKernelImageForDevice)
-        {
-            err += " -- Is the code compiled for the correct GPU architecture?";
-            int32_t device;
-            cudaDeviceProp prop;
-            if (cudaGetDevice(&device) == cudaSuccess)
-            {
-                if (cudaGetDeviceProperties(&prop, device) == cudaSuccess)
-                {
-                    err += " Device has compute capability ";
-                    err += std::to_string(prop.major);
-                    err += std::to_string(prop.minor);
-                    err += ".";
-                }
-            }
-        }
-        err += " " + std::string(file) + " " + std::to_string(line);
-        GW_LOG_ERROR(err.c_str());
-        // In Debug mode, this assert will cause a debugger trap
-        // which is beneficial when debugging errors.
-        assert(false);
-        std::abort();
+        print_error_and_abort(code, file, line);
     }
 }
 
@@ -247,13 +233,23 @@ public:
     explicit scoped_device_switch(int32_t device_id)
     {
         GW_CU_CHECK_ERR(cudaGetDevice(&device_id_before_));
-        GW_CU_CHECK_ERR(cudaSetDevice(device_id));
+        if (device_id_before_ != device_id)
+        {
+            GW_CU_CHECK_ERR(cudaSetDevice(device_id));
+        }
+        else
+        {
+            device_id_before_ = std::numeric_limits<int32_t>::max();
+        }
     }
 
     /// \brief Destructor switches back to original device ID
     ~scoped_device_switch()
     {
-        cudaSetDevice(device_id_before_);
+        if (device_id_before_ != std::numeric_limits<int32_t>::max())
+        {
+            cudaSetDevice(device_id_before_);
+        }
     }
 
     scoped_device_switch()                            = delete;

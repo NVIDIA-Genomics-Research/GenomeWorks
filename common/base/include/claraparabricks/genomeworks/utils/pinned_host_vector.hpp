@@ -19,6 +19,7 @@
 #include <vector>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wshadow"
 #include <thrust/system/cuda/experimental/pinned_allocator.h>
 #pragma GCC diagnostic pop
 

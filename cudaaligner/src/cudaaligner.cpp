@@ -16,6 +16,7 @@
 
 #include <claraparabricks/genomeworks/cudaaligner/cudaaligner.hpp>
 #include <claraparabricks/genomeworks/logging/logging.hpp>
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
 
 namespace claraparabricks
 {
@@ -29,6 +30,7 @@ namespace cudaaligner
 StatusType Init()
 {
     initialize_logger(claraparabricks::genomeworks::logging::LogLevel::warn);
+    GW_CU_CHECK_ERR(cudaFree(nullptr)); // initialize CUDA runtime
     return StatusType::success;
 }
 } // namespace cudaaligner

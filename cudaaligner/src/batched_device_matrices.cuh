@@ -26,6 +26,7 @@
 
 #include <tuple>
 #include <cassert>
+#include <cstdint>
 
 namespace claraparabricks
 {
@@ -144,18 +145,20 @@ public:
     batched_device_matrices() = default;
 
     batched_device_matrices(int64_t max_elements, DefaultDeviceAllocator allocator, cudaStream_t stream)
-        : storage_(max_elements, allocator, stream)
+        : next_start_(0)
+        , offsets_host_(1, 0)
+        , storage_(max_elements, allocator, stream)
         , offsets_(allocator, stream)
         , dev_(1, allocator, stream)
-        , offsets_host_(1, 0)
     {
     }
 
     batched_device_matrices(int32_t n_matrices, int32_t max_elements_per_matrix, DefaultDeviceAllocator allocator, cudaStream_t stream)
-        : storage_(static_cast<size_t>(n_matrices) * static_cast<size_t>(max_elements_per_matrix), allocator, stream)
+        : next_start_(0)
+        , offsets_host_(n_matrices + 1)
+        , storage_(static_cast<size_t>(n_matrices) * static_cast<size_t>(max_elements_per_matrix), allocator, stream)
         , offsets_(n_matrices + 1, allocator, stream)
         , dev_(1, allocator, stream)
-        , offsets_host_(n_matrices + 1)
     {
         assert(n_matrices >= 0);
         assert(max_elements_per_matrix >= 0);
@@ -165,7 +168,7 @@ public:
         {
             offsets_host_[i] = static_cast<ptrdiff_t>(max_elements_per_matrix) * i;
         }
-
+        next_start_ = offsets_host_.back();
         construct_device_matrices_async(stream);
     }
 
@@ -181,16 +184,20 @@ public:
         return dev_.data();
     }
 
+    void reserve_n_matrices(int32_t n_matrices)
+    {
+        offsets_host_.reserve(n_matrices + 1); // first element is always present
+    }
+
     bool append_matrix(int32_t max_elements)
     {
-        if (offsets_host_.empty())
-            return false;
-        const ptrdiff_t begin = offsets_host_.back();
-        if (begin + max_elements > get_size(storage_))
+        assert(next_start_ == offsets_host_.back());
+        if (offsets_host_.empty() || next_start_ + max_elements > get_size(storage_))
         {
             return false;
         }
-        offsets_host_.push_back(begin + max_elements);
+        offsets_host_.emplace_back(next_start_ + max_elements);
+        next_start_ += max_elements;
         return true;
     }
 
@@ -201,7 +208,8 @@ public:
 
     int64_t remaining_free_matrix_elements() const
     {
-        return offsets_host_.empty() ? 0 : get_size<int64_t>(storage_) - offsets_host_.back();
+        assert(next_start_ == offsets_host_.back());
+        return offsets_host_.empty() ? 0 : get_size<int64_t>(storage_) - next_start_;
     }
 
     void clear()
@@ -213,6 +221,7 @@ public:
             return;
         offsets_host_.clear();
         offsets_host_.push_back(0);
+        next_start_ = 0;
     }
 
     void construct_device_matrices_async(cudaStream_t stream)
@@ -244,10 +253,11 @@ public:
     }
 
 private:
+    ptrdiff_t next_start_ = 0;
+    pinned_host_vector<ptrdiff_t> offsets_host_;
     device_buffer<T> storage_;
     device_buffer<ptrdiff_t> offsets_;
     device_buffer<device_interface> dev_;
-    pinned_host_vector<ptrdiff_t> offsets_host_;
     pinned_host_vector<device_interface> dev_interface_host_; // just to provide truly async copies
 };
 

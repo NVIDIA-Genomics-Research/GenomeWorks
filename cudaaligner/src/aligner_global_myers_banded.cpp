@@ -129,7 +129,7 @@ struct AlignerGlobalMyersBanded::InternalData
     batched_device_matrices<WordType> query_patterns;
 };
 
-void AlignerGlobalMyersBanded::reallocate_internal_data(InternalData* data, const int64_t max_device_memory, const int32_t max_bandwidth, const int32_t n_alignments_initial, cudaStream_t stream)
+void AlignerGlobalMyersBanded::reallocate_internal_data(InternalData* const data, const int64_t max_device_memory, const int32_t max_bandwidth, const int32_t n_alignments_initial, cudaStream_t stream)
 {
     const memory_distribution mem    = split_available_memory(max_device_memory, max_bandwidth);
     DefaultDeviceAllocator allocator = data->seq_d.get_allocator();
@@ -156,10 +156,14 @@ void AlignerGlobalMyersBanded::reallocate_internal_data(InternalData* data, cons
     data->results_d.free();
     data->result_starts_d.free();
     data->result_lengths_d.free();
-    data->pvs            = batched_device_matrices<WordType>();
-    data->mvs            = batched_device_matrices<WordType>();
-    data->scores         = batched_device_matrices<int32_t>();
+    data->pvs = batched_device_matrices<WordType>();
+    data->pvs.reserve_n_matrices(n_alignments_initial);
+    data->mvs = batched_device_matrices<WordType>();
+    data->mvs.reserve_n_matrices(n_alignments_initial);
+    data->scores = batched_device_matrices<int32_t>();
+    data->scores.reserve_n_matrices(n_alignments_initial);
     data->query_patterns = batched_device_matrices<WordType>();
+    data->query_patterns.reserve_n_matrices(n_alignments_initial);
 
     int64_t max_available_memory = allocator.get_size_of_largest_free_memory_block();
     if (max_available_memory < get_total_memory_required(mem))
@@ -193,10 +197,8 @@ AlignerGlobalMyersBanded::AlignerGlobalMyersBanded(int64_t max_device_memory, in
     AlignerGlobalMyersBanded::reset_max_bandwidth(max_bandwidth);
 }
 
-AlignerGlobalMyersBanded::~AlignerGlobalMyersBanded()
-{
-    // Keep empty destructor to keep Workspace type incomplete in the .hpp file.
-}
+// Keep destructor definition in src file to keep InternalData type incomplete in the .hpp file.
+AlignerGlobalMyersBanded::~AlignerGlobalMyersBanded() = default;
 
 StatusType AlignerGlobalMyersBanded::add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length, bool reverse_complement_query, bool reverse_complement_target)
 {
