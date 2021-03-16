@@ -97,6 +97,17 @@ public:
         is_optimal_ = is_optimal;
     }
 
+    /// \brief Set alignment between sequences.
+    ///
+    /// \param alignment Alignment between sequences
+    /// \param is_optimal true if the alignment is optimal, false if it is an approximation
+    virtual void set_alignment(const std::vector<int8_t>& action, const std::vector<int32_t>& runlength, bool is_optimal)
+    {
+        action_     = action;
+        runlength_  = runlength;
+        is_optimal_ = is_optimal;
+    }
+
     /// \brief Get the alignment between sequences
     ///
     /// \return Vector of AlignmentState encoding sequence of match,
@@ -104,6 +115,16 @@ public:
     const std::vector<AlignmentState>& get_alignment() const override
     {
         return alignment_;
+    }
+
+    const std::vector<int8_t>& get_actions() const override
+    {
+        return action_;
+    }
+
+    const std::vector<int32_t>& get_runlengths() const override
+    {
+        return runlength_;
     }
 
     /// \brief Get the edit distance corrsponding to the alignment
@@ -123,6 +144,8 @@ private:
     StatusType status_;
     AlignmentType type_;
     std::vector<AlignmentState> alignment_;
+    std::vector<int8_t> action_;
+    std::vector<int32_t> runlength_;
     bool is_optimal_;
 };
 } // namespace cudaaligner

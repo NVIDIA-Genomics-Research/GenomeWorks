@@ -134,13 +134,25 @@ std::vector<AlignerTestData> create_aligner_test_cases()
     test_cases.push_back(data);
 
     std::vector<AlignerTestData> test_cases_final;
-    test_cases_final.reserve(4 * test_cases.size());
     test_cases_final.insert(test_cases_final.end(), test_cases.begin(), test_cases.end());
     std::transform(test_cases.begin(), test_cases.end(), std::back_inserter(test_cases_final), [](AlignerTestData td) { td.algorithm = AlignmentAlgorithm::Ukkonen; return td; });
     std::transform(test_cases.begin(), test_cases.end(), std::back_inserter(test_cases_final), [](AlignerTestData td) { td.algorithm = AlignmentAlgorithm::Myers; return td; });
     std::transform(test_cases.begin(), test_cases.end(), std::back_inserter(test_cases_final), [](AlignerTestData td) { td.algorithm = AlignmentAlgorithm::MyersBanded; return td; });
     std::transform(test_cases.begin(), test_cases.end(), std::back_inserter(test_cases_final), [](AlignerTestData td) { td.algorithm = AlignmentAlgorithm::HirschbergMyers; return td; });
 
+    // Add special cases to algorithms that support it
+    test_cases.clear();
+    data.inputs    = {{"", "GACTCTCCCCCTCCCCTTTAAATATATAAAAATGGGGTGTAGCTAG"}, {"GACTCTCCCCCTCCCCTTTAAATATATAAAAATGGGGTGTAGCTAG", ""}, {"", ""}};
+    data.cigars    = {"46I", "46D", ""};
+    data.edit_dist = {46, 46, 0};
+    data.algorithm = AlignmentAlgorithm::Default;
+    test_cases.push_back(data);
+    test_cases_final.insert(test_cases_final.end(), test_cases.begin(), test_cases.end());
+    // Ukkonen cannot handle these cases:
+    // std::transform(test_cases.begin(), test_cases.end(), std::back_inserter(test_cases_final), [](AlignerTestData td) { td.algorithm = AlignmentAlgorithm::Ukkonen; return td; });
+    std::transform(test_cases.begin(), test_cases.end(), std::back_inserter(test_cases_final), [](AlignerTestData td) { td.algorithm = AlignmentAlgorithm::Myers; return td; });
+    std::transform(test_cases.begin(), test_cases.end(), std::back_inserter(test_cases_final), [](AlignerTestData td) { td.algorithm = AlignmentAlgorithm::MyersBanded; return td; });
+    std::transform(test_cases.begin(), test_cases.end(), std::back_inserter(test_cases_final), [](AlignerTestData td) { td.algorithm = AlignmentAlgorithm::HirschbergMyers; return td; });
     return test_cases_final;
 }
 
@@ -313,7 +325,7 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
                                                                 << "\nand\n"
                                                                 << alignment->get_target_sequence()
                                                                 << "\nindex: " << a
-                                                                << "\nusing " << get_algorithm_name(param.algorithm);
+                                                                << " using " << get_algorithm_name(param.algorithm);
         }
         if (!edit_distances.empty())
         {
@@ -322,7 +334,7 @@ TEST_P(TestAlignerGlobal, TestAlignmentKernel)
                                                                          << "\nand\n"
                                                                          << alignment->get_target_sequence()
                                                                          << "\nindex: " << a
-                                                                         << "\nusing " << get_algorithm_name(param.algorithm);
+                                                                         << " using " << get_algorithm_name(param.algorithm);
         }
     }
 }
