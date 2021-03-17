@@ -36,3 +36,4 @@
 [submodule "3rdparty/libcudacxx"]
 	path = 3rdparty/libcudacxx
 	url = https://github.com/NVIDIA/libcudacxx
+	branch = main
