@@ -273,17 +273,6 @@ StatusType AlignerGlobalMyersBanded::add_alignment(const char* query, int32_t qu
     success      = success && scores.append_matrix(matrix_size);
     success      = success && query_patterns.append_matrix(query_pattern_size);
 
-    try
-    {
-        std::shared_ptr<AlignmentImpl> alignment = std::make_shared<AlignmentImpl>(query, query_length, target, target_length);
-        alignment->set_alignment_type(AlignmentType::global_alignment);
-        alignments_.push_back(alignment);
-    }
-    catch (...)
-    {
-        success = false;
-    }
-
     if (!success)
     {
         // This should never trigger due to the size check before the append.
@@ -298,7 +287,8 @@ StatusType AlignerGlobalMyersBanded::align_all()
 {
     GW_NVTX_RANGE(profiler, "AlignerGlobalMyersBanded::align_all");
     using cudautils::device_copy_n_async;
-    const auto n_alignments = get_size(alignments_);
+    assert(data_->result_starts_h.size() >= 1);
+    const int32_t n_alignments = get_size<int32_t>(data_->result_starts_h) - 1;
     if (n_alignments == 0)
         return StatusType::success;
 
@@ -364,7 +354,8 @@ StatusType AlignerGlobalMyersBanded::sync_alignments()
 {
     GW_NVTX_RANGE(profiler, "AlignerGlobalMyersBanded::sync");
     using cudautils::device_copy_n_async;
-    const int32_t n_alignments  = get_size(alignments_);
+    assert(data_->result_starts_h.size() >= 1);
+    const int32_t n_alignments  = get_size<int32_t>(data_->result_starts_h) - 1;
     const auto& result_starts_h = data_->result_starts_h;
     auto& results_h             = data_->results_h;
     auto& result_counts_h       = data_->result_counts_h;
@@ -375,8 +366,7 @@ StatusType AlignerGlobalMyersBanded::sync_alignments()
     device_copy_n_async(data_->results_d.data(), result_starts_h.back(), results_h.data(), stream_);
     device_copy_n_async(data_->result_counts_d.data(), result_starts_h.back(), result_counts_h.data(), stream_);
     device_copy_n_async(data_->result_lengths_d.data(), n_alignments, result_lengths_h.data(), stream_);
-
-    scoped_device_switch dev(device_id_);
+    alignments_.clear();
     GW_CU_CHECK_ERR(cudaStreamSynchronize(stream_));
 
     GW_NVTX_RANGE(profiler_post, "AlignerGlobalMyersBanded::post-sync");
@@ -388,13 +378,21 @@ StatusType AlignerGlobalMyersBanded::sync_alignments()
         const int32_t* r_counts_end   = r_counts_begin + std::abs(result_lengths_h[i]);
         assert(std::distance(r_begin, r_end) == std::distance(r_counts_begin, r_counts_end));
 
-        if (r_begin != r_end || (alignments_[i]->get_query_sequence().empty() && alignments_[i]->get_target_sequence().empty()))
+        const char* query           = data_->seq_h.data() + data_->seq_starts_h[2 * i];
+        const int32_t query_length  = data_->seq_starts_h[2 * i + 1] - data_->seq_starts_h[2 * i];
+        const char* target          = data_->seq_h.data() + data_->seq_starts_h[2 * i + 1];
+        const int32_t target_length = data_->seq_starts_h[2 * i + 2] - data_->seq_starts_h[2 * i + 1];
+
+        std::shared_ptr<AlignmentImpl> alignment = std::make_shared<AlignmentImpl>(query, query_length, target, target_length);
+        alignment->set_alignment_type(AlignmentType::global_alignment);
+
+        if (r_begin != r_end || (query_length == 0 && target_length == 0))
         {
-            AlignmentImpl* alignment = dynamic_cast<AlignmentImpl*>(alignments_[i].get());
-            const bool is_optimal    = (data_->result_lengths_h[i] >= 0);
+            const bool is_optimal = (data_->result_lengths_h[i] >= 0);
             alignment->set_alignment({std::make_reverse_iterator(r_end), std::make_reverse_iterator(r_begin)}, {std::make_reverse_iterator(r_counts_end), std::make_reverse_iterator(r_counts_begin)}, is_optimal);
             alignment->set_status(StatusType::success);
         }
+        alignments_.emplace_back(alignment);
     }
     reset_data();
     return StatusType::success;
@@ -408,13 +406,14 @@ void AlignerGlobalMyersBanded::reset()
 
 DeviceAlignmentsPtrs AlignerGlobalMyersBanded::get_alignments_device() const
 {
+    assert(data_->result_starts_h.size() >= 1);
     DeviceAlignmentsPtrs r;
     r.starts       = data_->result_starts_d.data();
     r.lengths      = data_->result_lengths_d.data();
     r.actions      = data_->results_d.data();
     r.runlengths   = data_->result_counts_d.data();
     r.total_length = data_->result_starts_h.back();
-    r.n_alignments = get_size<int32_t>(alignments_);
+    r.n_alignments = get_size<int32_t>(data_->result_starts_h) - 1;
     return r;
 }
 
