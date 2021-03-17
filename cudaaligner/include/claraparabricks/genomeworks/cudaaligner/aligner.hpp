@@ -140,6 +140,20 @@ public:
     /// Resets all data of the aligner and resets the bandwidth to the given argument.
     /// \param max_bandwidth The new maximal bandwidth to use for the fixed diagonal band of the Needleman-Wunsch matrix. Is not allowed to be a (multiple of 32) + 1. If such a value is passed it will throw and std::invalid_argument exception.
     virtual void reset_max_bandwidth(int32_t max_bandwidth) = 0;
+
+    using Aligner::add_alignment;
+    /// \brief Add new alignment object. Only strings with characters
+    ///        from the alphabet [ACGT] are guaranteed to provide correct results.
+    ///
+    /// \param max_bandwidth The new maximal bandwidth to use for the fixed diagonal band of the Needleman-Wunsch matrix of the alignment. Is not allowed to be a (multiple of 32) + 1. If such a value is passed it will throw and std::invalid_argument exception.
+    /// \param query Query string
+    /// \param query_length  Query string length
+    /// \param target Target string
+    /// \param target_length Target string length
+    /// \param reverse_complement_query Reverse complement the query string
+    /// \param reverse_complement_target Reverse complement the target string
+    virtual StatusType add_alignment(int32_t max_bandwidth, const char* query, int32_t query_length, const char* target, int32_t target_length,
+                                     bool reverse_complement_query = false, bool reverse_complement_target = false) = 0;
 };
 
 /// \brief Created Aligner object - DEPRECATED API

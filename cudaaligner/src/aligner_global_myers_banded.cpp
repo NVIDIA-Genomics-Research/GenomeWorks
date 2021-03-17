@@ -106,6 +106,7 @@ struct AlignerGlobalMyersBanded::InternalData
     InternalData(const DefaultDeviceAllocator& allocator, cudaStream_t stream)
         : seq_d(0, allocator, stream)
         , seq_starts_d(0, allocator, stream)
+        , max_bandwidths_d(0, allocator, stream)
         , scheduling_index_d(0, allocator, stream)
         , scheduling_atomic_d(0, allocator, stream)
         , results_d(0, allocator, stream)
@@ -117,6 +118,7 @@ struct AlignerGlobalMyersBanded::InternalData
 
     pinned_host_vector<char> seq_h;
     pinned_host_vector<int64_t> seq_starts_h;
+    pinned_host_vector<int32_t> max_bandwidths_h;
     pinned_host_vector<int32_t> scheduling_index_h;
     pinned_host_vector<int8_t> results_h;
     pinned_host_vector<int32_t> result_counts_h;
@@ -124,6 +126,7 @@ struct AlignerGlobalMyersBanded::InternalData
     pinned_host_vector<int64_t> result_starts_h;
     device_buffer<char> seq_d;
     device_buffer<int64_t> seq_starts_d;
+    device_buffer<int32_t> max_bandwidths_d;
     device_buffer<int32_t> scheduling_index_d;
     device_buffer<int32_t> scheduling_atomic_d;
     device_buffer<int8_t> results_d;
@@ -143,6 +146,7 @@ void AlignerGlobalMyersBanded::reallocate_internal_data(InternalData* const data
 
     data->seq_h.clear();
     data->seq_starts_h.clear();
+    data->max_bandwidths_h.clear();
     data->scheduling_index_h.clear();
     data->results_h.clear();
     data->result_counts_h.clear();
@@ -154,12 +158,14 @@ void AlignerGlobalMyersBanded::reallocate_internal_data(InternalData* const data
     data->seq_h.resize(2 * mem.sequence_memory / sizeof(char));
 
     data->seq_starts_h.reserve(2 * n_alignments_initial + 1);
+    data->max_bandwidths_h.reserve(n_alignments_initial);
     data->scheduling_index_h.reserve(n_alignments_initial);
     data->result_lengths_h.reserve(n_alignments_initial);
     data->result_starts_h.reserve(n_alignments_initial + 1);
 
     data->seq_d.free();
     data->seq_starts_d.free();
+    data->max_bandwidths_d.free();
     data->scheduling_index_d.free();
     data->scheduling_atomic_d.free();
     data->results_d.free();
@@ -186,6 +192,7 @@ void AlignerGlobalMyersBanded::reallocate_internal_data(InternalData* const data
 
     data->seq_d.clear_and_resize(2 * mem.sequence_memory / sizeof(char));
     data->seq_starts_d.clear_and_resize(2 * n_alignments_initial + 1);
+    data->max_bandwidths_d.clear_and_resize(n_alignments_initial);
     data->scheduling_index_d.clear_and_resize(n_alignments_initial);
     data->scheduling_atomic_d.clear_and_resize(1);
     data->results_d.clear_and_resize(mem.results_memory / sizeof(char));
@@ -216,15 +223,22 @@ AlignerGlobalMyersBanded::~AlignerGlobalMyersBanded() = default;
 
 StatusType AlignerGlobalMyersBanded::add_alignment(const char* query, int32_t query_length, const char* target, int32_t target_length, bool reverse_complement_query, bool reverse_complement_target)
 {
+    return AlignerGlobalMyersBanded::add_alignment(max_bandwidth_, query, query_length, target, target_length, reverse_complement_query, reverse_complement_target);
+}
+
+StatusType AlignerGlobalMyersBanded::add_alignment(int32_t max_bandwidth, const char* query, int32_t query_length, const char* target, int32_t target_length, bool reverse_complement_query, bool reverse_complement_target)
+{
     GW_NVTX_RANGE(profiler, "AlignerGlobalMyersBanded::add_alignment");
+    throw_on_negative(max_bandwidth, "query_length should not be negative");
     throw_on_negative(query_length, "query_length should not be negative");
     throw_on_negative(target_length, "target_length should not be negative");
     if (query == nullptr || target == nullptr)
         return StatusType::generic_error;
 
-    auto& seq_h           = data_->seq_h;
-    auto& seq_starts_h    = data_->seq_starts_h;
-    auto& result_starts_h = data_->result_starts_h;
+    auto& seq_h            = data_->seq_h;
+    auto& seq_starts_h     = data_->seq_starts_h;
+    auto& max_bandwidths_h = data_->max_bandwidths_h;
+    auto& result_starts_h  = data_->result_starts_h;
 
     batched_device_matrices<WordType>& pvs            = data_->pvs;
     batched_device_matrices<WordType>& mvs            = data_->mvs;
@@ -243,7 +257,13 @@ StatusType AlignerGlobalMyersBanded::add_alignment(const char* query, int32_t qu
     assert(mvs.number_of_matrices() == scores.number_of_matrices());
     assert(query_patterns.number_of_matrices() == scores.number_of_matrices());
 
-    const int64_t matrix_size        = compute_matrix_size_for_alignment(query_length, target_length, max_bandwidth_);
+    if (max_bandwidth > query_length)
+    {
+        // we need to quarantee max_bandwidth % word_size != 1.
+        max_bandwidth = (query_length % word_size == 1 ? query_length + 1 : query_length);
+    }
+
+    const int64_t matrix_size        = compute_matrix_size_for_alignment(query_length, target_length, max_bandwidth);
     const int32_t n_words_query      = ceiling_divide(query_length, word_size);
     const int32_t query_pattern_size = n_words_query * 4;
 
@@ -266,6 +286,7 @@ StatusType AlignerGlobalMyersBanded::add_alignment(const char* query, int32_t qu
     genomeutils::copy_sequence(target, target_length, seq_h.data() + seq_start + query_length, reverse_complement_target);
     seq_starts_h.push_back(seq_start + query_length);
     seq_starts_h.push_back(seq_start + query_length + target_length);
+    max_bandwidths_h.push_back(max_bandwidth);
     result_starts_h.push_back(result_starts_h.back() + query_length + target_length);
 
     bool success = pvs.append_matrix(matrix_size);
@@ -299,13 +320,15 @@ StatusType AlignerGlobalMyersBanded::align_all()
     data_->scores.construct_device_matrices_async(stream_);
     data_->query_patterns.construct_device_matrices_async(stream_);
 
-    const auto& seq_h           = data_->seq_h;
-    const auto& seq_starts_h    = data_->seq_starts_h;
-    auto& scheduling_index_h    = data_->scheduling_index_h;
-    const auto& result_starts_h = data_->result_starts_h;
+    const auto& seq_h            = data_->seq_h;
+    const auto& seq_starts_h     = data_->seq_starts_h;
+    const auto& max_bandwidths_h = data_->max_bandwidths_h;
+    auto& scheduling_index_h     = data_->scheduling_index_h;
+    const auto& result_starts_h  = data_->result_starts_h;
 
     auto& seq_d              = data_->seq_d;
     auto& seq_starts_d       = data_->seq_starts_d;
+    auto& max_bandwidths_d   = data_->max_bandwidths_d;
     auto& scheduling_index_d = data_->scheduling_index_d;
     auto& results_d          = data_->results_d;
     auto& result_counts_d    = data_->result_counts_d;
@@ -322,6 +345,10 @@ StatusType AlignerGlobalMyersBanded::align_all()
     {
         result_starts_d.clear_and_resize(n_alignments + 1);
     }
+    if (get_size(max_bandwidths_d) < n_alignments)
+    {
+        max_bandwidths_d.clear_and_resize(n_alignments);
+    }
     if (get_size(result_lengths_d) < n_alignments)
     {
         result_lengths_d.clear_and_resize(n_alignments);
@@ -331,6 +358,11 @@ StatusType AlignerGlobalMyersBanded::align_all()
         scheduling_index_d.clear_and_resize(n_alignments);
     }
 
+    device_copy_n_async(seq_h.data(), seq_starts_h.back(), seq_d.data(), stream_);
+    device_copy_n_async(seq_starts_h.data(), 2 * n_alignments + 1, seq_starts_d.data(), stream_);
+    device_copy_n_async(max_bandwidths_h.data(), n_alignments, max_bandwidths_d.data(), stream_);
+    device_copy_n_async(result_starts_h.data(), n_alignments + 1, result_starts_d.data(), stream_);
+
     // Create an index of alignment tasks, which determines the processing
     // order. Sort this index by the sum of query and target lengths such
     // that large alignments get processed first.
@@ -338,13 +370,10 @@ StatusType AlignerGlobalMyersBanded::align_all()
     std::iota(begin(scheduling_index_h), end(scheduling_index_h), 0);
     std::sort(begin(scheduling_index_h), end(scheduling_index_h), [&seq_starts_h](int32_t i, int32_t j) { return seq_starts_h[2 * i + 2] - seq_starts_h[2 * i] > seq_starts_h[2 * j + 2] - seq_starts_h[2 * j]; });
 
-    device_copy_n_async(seq_h.data(), seq_starts_h.back(), seq_d.data(), stream_);
-    device_copy_n_async(seq_starts_h.data(), 2 * n_alignments + 1, seq_starts_d.data(), stream_);
     device_copy_n_async(scheduling_index_h.data(), n_alignments, scheduling_index_d.data(), stream_);
-    device_copy_n_async(result_starts_h.data(), n_alignments + 1, result_starts_d.data(), stream_);
 
     myers_banded_gpu(results_d.data(), result_counts_d.data(), result_lengths_d.data(), result_starts_d.data(),
-                     seq_d.data(), seq_starts_d.data(), scheduling_index_d.data(), data_->scheduling_atomic_d.data(), n_alignments, max_bandwidth_,
+                     seq_d.data(), seq_starts_d.data(), max_bandwidths_d.data(), scheduling_index_d.data(), data_->scheduling_atomic_d.data(), n_alignments,
                      data_->pvs, data_->mvs, data_->scores, data_->query_patterns,
                      stream_);
     return StatusType::success;
@@ -434,6 +463,7 @@ void AlignerGlobalMyersBanded::reset_max_bandwidth(const int32_t max_bandwidth)
 void AlignerGlobalMyersBanded::reset_data()
 {
     data_->seq_starts_h.clear();
+    data_->max_bandwidths_h.clear();
     data_->result_lengths_h.clear();
     data_->result_starts_h.clear();
 
