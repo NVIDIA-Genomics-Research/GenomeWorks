@@ -50,6 +50,7 @@ std::unique_ptr<Aligner> create_aligner(
     cudaStream_t stream, int32_t device_id, int64_t max_device_memory_allocator_caching_size)
 {
     GW_NVTX_RANGE(profiler, "create_aligner");
+    scoped_device_switch device(device_id);
     if (max_device_memory_allocator_caching_size < -1)
     {
         throw std::invalid_argument("max_device_memory_allocator_caching_size has to be either -1 (=all available GPU memory) or greater or equal than 0.");
@@ -99,6 +100,7 @@ std::unique_ptr<FixedBandAligner> create_aligner(
     int64_t max_device_memory)
 {
     GW_NVTX_RANGE(profiler, "create_aligner");
+    scoped_device_switch device(device_id);
     if (max_device_memory < -1)
     {
         throw std::invalid_argument("max_device_memory has to be either -1 (=all available GPU memory) or greater or equal than 0.");
