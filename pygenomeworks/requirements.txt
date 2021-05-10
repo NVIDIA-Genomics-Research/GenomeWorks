@@ -16,11 +16,11 @@
 
 
 
-Cython==0.29.12
+Cython~=0.29.14
 intervaltree==3.1.0
 matplotlib==3.3.2
 networkx==2.4
-numpy==1.16.3
+numpy~=1.17.5
 pytest==4.4.1
 setuptools>=41.4.0
 sortedcollections==1.1.2
