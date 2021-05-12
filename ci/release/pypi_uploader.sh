@@ -43,7 +43,7 @@ for f in "${WORKSPACE}"/pygenomeworks/genomeworks_wheel/*.whl; do
         echo "genomeworks Whl file does not exist"
         exit 1
     else
-        conda install -c conda-forge twine
+        pip install twine
         python3 -m pip install 'readme-renderer>=21.0' # to support py3.5 images
         # Change .whl package name to support PyPI upload
         MODIFIED_WHL_NAME=$(dirname ${f})/$(basename "${f}" | sed -r "s/(.*-.+-.+)-.+-.+.whl/\1-none-any.whl/")
