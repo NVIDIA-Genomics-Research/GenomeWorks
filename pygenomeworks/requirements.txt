@@ -24,4 +24,4 @@ numpy~=1.17.5
 pytest==4.4.1
 setuptools>=41.4.0
 sortedcollections==1.1.2
-tqdm==4.31.1
+tqdm~=4.31
