@@ -19,9 +19,9 @@
 #include "cudapoa_structs.cuh"
 
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
-#include <claraparabricks/genomeworks/utils/limits.cuh>
+#include <cuda/std/limits>
 
-#include <stdio.h>
+#include <cstdio>
 
 namespace claraparabricks
 {
@@ -172,7 +172,7 @@ __device__ __forceinline__
 
     static_assert(CPT == 4, "implementation currently supports only 4 cells per thread");
 
-    GW_CONSTEXPR ScoreT score_type_min_limit = numeric_limits<ScoreT>::min();
+    GW_CONSTEXPR ScoreT score_type_min_limit = cuda::std::numeric_limits<ScoreT>::min();
 
     int16_t lane_idx = threadIdx.x % WARP_SIZE;
     int64_t score_index;

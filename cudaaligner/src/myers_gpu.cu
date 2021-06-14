@@ -19,14 +19,13 @@
 
 #include <claraparabricks/genomeworks/cudaaligner/aligner.hpp>
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
-#include <claraparabricks/genomeworks/utils/limits.cuh>
 #include <claraparabricks/genomeworks/utils/mathutils.hpp>
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 #include <claraparabricks/genomeworks/utils/allocator.hpp>
 #include <claraparabricks/genomeworks/utils/device_buffer.hpp>
 
 #include <cassert>
-#include <climits>
+#include <cuda/std/limits>
 #include <vector>
 #include <numeric>
 #pragma GCC diagnostic push
@@ -429,7 +428,7 @@ __device__ int32_t myers_backtrace_banded(int8_t* path, int32_t* const path_coun
 {
     assert(threadIdx.x == 0);
     using nw_score_t                    = int32_t;
-    GW_CONSTEXPR nw_score_t out_of_band = numeric_limits<nw_score_t>::max() - 1; // -1 to avoid integer overflow further down.
+    GW_CONSTEXPR nw_score_t out_of_band = cuda::std::numeric_limits<nw_score_t>::max() - 1; // -1 to avoid integer overflow further down.
     assert(pv.num_rows() == score.num_rows());
     assert(mv.num_rows() == score.num_rows());
     assert(pv.num_cols() == score.num_cols());

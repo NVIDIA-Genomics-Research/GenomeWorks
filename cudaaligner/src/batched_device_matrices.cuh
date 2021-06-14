@@ -19,7 +19,7 @@
 #include "matrix_cpu.hpp"
 
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
-#include <claraparabricks/genomeworks/utils/limits.cuh>
+#include <cuda/std/limits>
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 #include <claraparabricks/genomeworks/utils/device_buffer.hpp>
 #include <claraparabricks/genomeworks/utils/pinned_host_vector.hpp>
@@ -131,7 +131,7 @@ public:
         {
             assert(id < n_matrices_);
             assert(offsets_[id + 1] - offsets_[id] >= 0);
-            assert(offsets_[id + 1] - offsets_[id] <= numeric_limits<int32_t>::max());
+            assert(offsets_[id + 1] - offsets_[id] <= cuda::std::numeric_limits<int32_t>::max());
             return offsets_[id + 1] - offsets_[id];
         }
 
