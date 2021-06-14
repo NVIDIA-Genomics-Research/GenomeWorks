@@ -26,9 +26,6 @@ configure_file(${PROJECT_SOURCE_DIR}/common/base/src/version.cpp.in
 # Project specific NVCC flags, --expt-relaxed-constexpr is being added to allow using numeric_limits inside device kernels.
 # Using in CUDA 10.1+ to avoid compilation issues with CUDA <= 10.0.
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14")
-if (gw_cuda_after_10_0)
-    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --expt-relaxed-constexpr")
-endif ()
 if (gw_cuda_gen_all_arch)
     CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS "Common")
 else ()
