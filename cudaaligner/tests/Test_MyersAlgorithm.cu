@@ -93,7 +93,7 @@ myers_compute_scores_edit_dist_banded_test_kernel(
 
     int32_t diagonal_begin = -1;
     int32_t diagonal_end   = -1;
-    myers::myers_compute_scores_edit_dist_banded(diagonal_begin, diagonal_end, pv, mv, score, query_pattern, target, query, target_size, query_size, band_width, n_words_band, p, alignment_idx);
+    myers::myers_compute_scores_edit_dist_banded(diagonal_begin, diagonal_end, pv, mv, score, query_pattern, target, query, target_size, query_size, band_width, n_words_band, p);
 }
 
 } // namespace test

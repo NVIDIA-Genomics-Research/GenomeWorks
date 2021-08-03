@@ -50,17 +50,24 @@ void myers_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length
                batched_device_matrices<myers::WordType>& query_patterns,
                cudaStream_t stream);
 
-void myers_banded_gpu(int8_t* paths_d, int32_t* path_counts_d, int32_t* path_lengths_d, int64_t const* path_starts_d,
+int32_t myers_banded_gpu_get_blocks_per_sm();
+
+void myers_banded_gpu(int8_t* paths_d, int32_t* path_counts_d, int32_t* path_starts_d, uint32_t* path_metadata_d,
                       char const* sequences_d,
                       int64_t const* sequence_starts_d,
                       int32_t const* max_bandwidths_d,
-                      int32_t const* scheduling_index_d,
+                      int32_t* scheduling_index_d,
                       int32_t* scheduling_atomic_d,
-                      int32_t n_alignments,
                       batched_device_matrices<myers::WordType>& pv,
                       batched_device_matrices<myers::WordType>& mv,
                       batched_device_matrices<int32_t>& score,
                       batched_device_matrices<myers::WordType>& query_patterns,
+                      int8_t* path_buffer_d,
+                      int32_t* path_counts_buffer_d,
+                      int32_t path_buffer_size,
+                      int32_t n_alignments,
+                      int32_t n_launch_blocks,
+                      int32_t n_large_workspaces,
                       cudaStream_t stream);
 } // namespace cudaaligner
 

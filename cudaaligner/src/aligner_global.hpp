@@ -56,12 +56,12 @@ public:
         assert(false);
         // TODO implement for other aligners
         DeviceAlignmentsPtrs r;
-        r.starts       = nullptr;
-        r.lengths      = nullptr;
-        r.actions      = nullptr;
-        r.runlengths   = nullptr;
-        r.total_length = 0;
-        r.n_alignments = 0;
+        r.cigar_operations = nullptr;
+        r.cigar_runlengths = nullptr;
+        r.cigar_offsets    = nullptr;
+        r.metadata         = nullptr;
+        r.total_length     = 0;
+        r.n_alignments     = 0;
         return r;
     }
 

@@ -33,6 +33,8 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #include <cuda/atomic>
 #pragma GCC diagnostic pop
+#include <cub/device/device_radix_sort.cuh>
+#include <cub/util_type.cuh>
 
 namespace claraparabricks
 {
@@ -51,12 +53,26 @@ namespace myers
 
 constexpr int32_t initial_distance_guess_factor = 20;
 
-__global__ void init_atomic(cuda::atomic<int32_t, cuda::thread_scope_device>* atomic)
+__global__ void set_minus_one_to_zero(int32_t* array, int32_t n)
+{
+    const int32_t i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n)
+    {
+        if (array[i] < 0)
+            array[i] = 0;
+    }
+}
+
+__global__ void init_atomics(cuda::atomic<int32_t, cuda::thread_scope_device>* path_start_atomic, cuda::atomic<int32_t, cuda::thread_scope_device>* scheduling_atomic, int32_t value)
 {
     // Safety-check for work-around for missing cuda::atomic_ref in libcu++ (see further below).
     static_assert(sizeof(int32_t) == sizeof(cuda::atomic<int32_t, cuda::thread_scope_device>), "cuda::atomic<int32_t> needs to have the same size as int32_t.");
     static_assert(alignof(int32_t) == alignof(cuda::atomic<int32_t, cuda::thread_scope_device>), "cuda::atomic<int32_t> needs to have the same alignment as int32_t.");
-    atomic->store(0, cuda::memory_order_relaxed);
+    if (threadIdx.x == 0 && blockIdx.x == 0)
+    {
+        path_start_atomic->store(0, cuda::memory_order_relaxed);
+        scheduling_atomic->store(value, cuda::memory_order_relaxed);
+    }
 }
 
 inline __device__ WordType warp_leftshift_sync(uint32_t warp_mask, WordType v)
@@ -748,8 +764,7 @@ myers_compute_scores_edit_dist_banded(
     int32_t const query_size,
     int32_t const band_width,
     int32_t const n_words_band,
-    int32_t const p,
-    int32_t const alignment_idx)
+    int32_t const p)
 {
     // Note: 0-th row of the NW matrix is implicit for pv, mv and score! (given by the inital warp_carry)
     assert(warpSize == warp_size);
@@ -760,7 +775,6 @@ myers_compute_scores_edit_dist_banded(
     assert(band_width > 0 || query_size == 0); // might even be ok for band_width = 0 - haven't checked.
     assert(n_words_band > 0 || query_size == 0);
     assert(p >= 0);
-    assert(alignment_idx >= 0);
 
     assert(pv.num_rows() == n_words_band);
     assert(mv.num_rows() == n_words_band);
@@ -831,7 +845,7 @@ myers_compute_scores_edit_dist_banded(
     }
 }
 
-__device__ int32_t get_alignment_task(const int32_t* scheduling_index_d, cuda::atomic<int32_t, cuda::thread_scope_device>* scheduling_atomic_d)
+__device__ int32_t get_alignment_task(const int32_t* scheduling_index_d, cuda::atomic<int32_t, cuda::thread_scope_device>* scheduling_atomic_d, const int32_t n_alignments)
 {
     // Fetch the index of the next alignment to be processed.
     // A full warp operates on the same alignment, i.e.
@@ -842,146 +856,178 @@ __device__ int32_t get_alignment_task(const int32_t* scheduling_index_d, cuda::a
         sched_idx = scheduling_atomic_d->fetch_add(1, cuda::memory_order_relaxed);
     }
     sched_idx = __shfl_sync(0xffff'ffffu, sched_idx, 0);
-    return scheduling_index_d[sched_idx];
+    return sched_idx < n_alignments ? scheduling_index_d[sched_idx] : n_alignments;
 }
 
 __global__ void myers_banded_kernel(
-    int8_t* paths_base,
-    int32_t* const path_counts_base,
-    int32_t* path_lengths,
-    int64_t const* path_starts,
+    int8_t* const paths_output,
+    int32_t* const path_counts_output,
+    int32_t* const path_starts,
+    uint32_t* const path_metadata,
+    cuda::atomic<int32_t, cuda::thread_scope_device>* path_start_atomic_d,
     batched_device_matrices<WordType>::device_interface* pvi,
     batched_device_matrices<WordType>::device_interface* mvi,
     batched_device_matrices<int32_t>::device_interface* scorei,
     batched_device_matrices<WordType>::device_interface* query_patternsi,
+    int8_t* path_buffer,
+    int32_t* path_counts_buffer,
     char const* sequences_d, int64_t const* sequence_starts_d, int32_t const* max_bandwidths_d,
     const int32_t* scheduling_index_d, cuda::atomic<int32_t, cuda::thread_scope_device>* scheduling_atomic_d,
+    const int32_t path_buffer_size,
+    const int32_t n_large_workspaces,
     const int32_t n_alignments)
 {
     assert(warpSize == warp_size);
     assert(threadIdx.x < warp_size);
-
     if (blockIdx.x >= n_alignments)
         return;
-    const int32_t alignment_idx = get_alignment_task(scheduling_index_d, scheduling_atomic_d);
-    assert(alignment_idx < n_alignments);
-    if (alignment_idx >= n_alignments)
-        return;
-    const char* const query     = sequences_d + sequence_starts_d[2 * alignment_idx];
-    const char* const target    = sequences_d + sequence_starts_d[2 * alignment_idx + 1];
-    const int32_t query_size    = target - query;
-    const int32_t target_size   = sequences_d + sequence_starts_d[2 * alignment_idx + 2] - target;
-    const int32_t n_words       = ceiling_divide(query_size, word_size);
-    const int32_t max_bandwidth = max_bandwidths_d[alignment_idx];
-    assert(max_bandwidth % word_size != 1); // we need at least two bits in the last word
-    if (max_bandwidth - 1 < abs(target_size - query_size) && query_size != 0 && target_size != 0)
+    int32_t alignment_idx = 0;
+    if (blockIdx.x < n_large_workspaces)
     {
-        if (threadIdx.x == 0)
-        {
-            path_lengths[alignment_idx] = 0;
-        }
-        return;
+
+        alignment_idx = scheduling_index_d[blockIdx.x];
     }
-    if (target_size == 0 || query_size == 0)
+    else
     {
-        // Temporary fix for edge cases target_size == 0 and query_size == 0.
-        // TODO: check if the regular implementation works for this case.
+        alignment_idx = get_alignment_task(scheduling_index_d, scheduling_atomic_d, n_alignments);
+    }
+    while (alignment_idx < n_alignments)
+    {
+        const char* const query     = sequences_d + sequence_starts_d[2 * alignment_idx];
+        const char* const target    = sequences_d + sequence_starts_d[2 * alignment_idx + 1];
+        const int32_t query_size    = target - query;
+        const int32_t target_size   = sequences_d + sequence_starts_d[2 * alignment_idx + 2] - target;
+        const int32_t n_words       = ceiling_divide(query_size, word_size);
+        const int32_t max_bandwidth = max_bandwidths_d[alignment_idx];
+        assert(max_bandwidth % word_size != 1); // we need at least two bits in the last word
+        if (max_bandwidth - 1 < abs(target_size - query_size) && query_size != 0 && target_size != 0)
+        {
+            if (threadIdx.x == 0)
+            {
+                path_starts[alignment_idx]   = -1;
+                path_metadata[alignment_idx] = static_cast<uint32_t>(alignment_idx) | 0;
+            }
+            alignment_idx = get_alignment_task(scheduling_index_d, scheduling_atomic_d, n_alignments);
+            continue;
+        }
+        if (target_size == 0 || query_size == 0)
+        {
+            // Temporary fix for edge cases target_size == 0 and query_size == 0.
+            // TODO: check if the regular implementation works for this case.
+            if (threadIdx.x == 0)
+            {
+                if (query_size == 0 && target_size == 0)
+                {
+                    path_starts[alignment_idx]   = -1;
+                    path_metadata[alignment_idx] = static_cast<uint32_t>(alignment_idx) | (1u << 31);
+                }
+                else
+                {
+                    const int32_t path_start       = path_start_atomic_d->fetch_add(1, cuda::memory_order_relaxed);
+                    path_starts[alignment_idx]     = path_start;
+                    paths_output[path_start]       = query_size == 0 ? static_cast<int8_t>(AlignmentState::insertion) : static_cast<int8_t>(AlignmentState::deletion);
+                    path_counts_output[path_start] = query_size + target_size; // one of them is 0.
+                    path_metadata[alignment_idx]   = static_cast<uint32_t>(alignment_idx) | (1u << 31);
+                }
+            }
+            alignment_idx = get_alignment_task(scheduling_index_d, scheduling_atomic_d, n_alignments);
+            continue;
+        }
+        __syncwarp();
+
+        device_matrix_view<WordType> query_pattern = query_patternsi->get_matrix_view(blockIdx.x, n_words, 4);
+
+        for (int32_t idx = threadIdx.x; idx < n_words; idx += warp_size)
+        {
+            // TODO query load is inefficient
+            query_pattern(idx, 0) = myers_generate_query_pattern('A', query, query_size, idx * word_size);
+            query_pattern(idx, 1) = myers_generate_query_pattern('C', query, query_size, idx * word_size);
+            query_pattern(idx, 2) = myers_generate_query_pattern('T', query, query_size, idx * word_size);
+            query_pattern(idx, 3) = myers_generate_query_pattern('G', query, query_size, idx * word_size);
+        }
+        __syncwarp();
+
+        // Use the Ukkonen algorithm for banding.
+        // Take an initial guess for the edit distance: max_distance_estimate
+        // and compute the maximal band of the NW matrix which is required for this distance.
+        // If the computed distance is smaller accept and compute the backtrace/path,
+        // otherwise retry with a larger guess (i.e. and larger band).
+        int32_t max_distance_estimate = max(1, abs(target_size - query_size) + min(target_size, query_size) / initial_distance_guess_factor);
+        device_matrix_view<WordType> pv;
+        device_matrix_view<WordType> mv;
+        device_matrix_view<int32_t> score;
+        int32_t diagonal_begin = -1;
+        int32_t diagonal_end   = -1;
+        int32_t band_width     = 0;
+        while (1)
+        {
+            int32_t p              = min3(target_size, query_size, (max_distance_estimate - abs(target_size - query_size)) / 2);
+            int32_t band_width_new = min(1 + 2 * p + abs(target_size - query_size), query_size);
+            if (band_width_new % word_size == 1 && band_width_new != query_size) // we need at least two bits in the last word
+            {
+                p += 1;
+                band_width_new = min(1 + 2 * p + abs(target_size - query_size), query_size);
+            }
+            if (band_width_new > max_bandwidth)
+            {
+                band_width_new = max_bandwidth;
+                p              = (band_width_new - 1 - abs(target_size - query_size)) / 2;
+            }
+            const int32_t n_words_band = ceiling_divide(band_width_new, word_size);
+            if (static_cast<int64_t>(n_words_band) * static_cast<int64_t>(target_size + 1) > pvi->get_max_elements_per_matrix(blockIdx.x))
+            {
+                band_width = -band_width;
+                break;
+            }
+            band_width     = band_width_new;
+            pv             = pvi->get_matrix_view(blockIdx.x, n_words_band, target_size + 1);
+            mv             = mvi->get_matrix_view(blockIdx.x, n_words_band, target_size + 1);
+            score          = scorei->get_matrix_view(blockIdx.x, n_words_band, target_size + 1);
+            diagonal_begin = -1;
+            diagonal_end   = -1;
+            myers_compute_scores_edit_dist_banded(diagonal_begin, diagonal_end, pv, mv, score, query_pattern, target, query, target_size, query_size, band_width, n_words_band, p);
+            __syncwarp();
+            assert(n_words_band > 0 || query_size == 0);
+            const int32_t cur_edit_distance = n_words_band > 0 ? score(n_words_band - 1, target_size) : target_size;
+            if (cur_edit_distance <= max_distance_estimate || band_width == query_size)
+            {
+                break;
+            }
+            if (band_width == max_bandwidth)
+            {
+                band_width = -band_width;
+                break;
+            }
+            max_distance_estimate *= 2;
+        }
+        int8_t* const path         = path_buffer + blockIdx.x * path_buffer_size;
+        int32_t* const path_counts = path_counts_buffer + blockIdx.x * path_buffer_size;
+        int32_t path_start         = 0;
+        int32_t path_length        = 0;
         if (threadIdx.x == 0)
         {
-            int8_t* const path         = paths_base + path_starts[alignment_idx];
-            int32_t* const path_counts = path_counts_base + path_starts[alignment_idx];
-            if (query_size == 0 && target_size == 0)
+            if (band_width != 0)
             {
-                path_lengths[alignment_idx] = 0;
+                path_length                  = myers_backtrace_banded(path, path_counts, pv, mv, score, diagonal_begin, diagonal_end, abs(band_width), target_size, query_size);
+                path_start                   = path_start_atomic_d->fetch_add(path_length, cuda::memory_order_relaxed);
+                path_starts[alignment_idx]   = path_start;
+                path_metadata[alignment_idx] = static_cast<uint32_t>(alignment_idx) | (band_width > 0 ? (1u << 31) : 0);
             }
             else
             {
-                path[0]                     = query_size == 0 ? static_cast<int8_t>(AlignmentState::insertion) : static_cast<int8_t>(AlignmentState::deletion);
-                path_counts[0]              = query_size + target_size; // one of them is 0.
-                path_lengths[alignment_idx] = 1;
+                path_starts[alignment_idx]   = -1;
+                path_metadata[alignment_idx] = static_cast<uint32_t>(alignment_idx) | 0;
             }
         }
-        return;
-    }
-    __syncthreads();
-
-    device_matrix_view<WordType> query_pattern = query_patternsi->get_matrix_view(alignment_idx, n_words, 4);
-
-    for (int32_t idx = threadIdx.x; idx < n_words; idx += warp_size)
-    {
-        // TODO query load is inefficient
-        query_pattern(idx, 0) = myers_generate_query_pattern('A', query, query_size, idx * word_size);
-        query_pattern(idx, 1) = myers_generate_query_pattern('C', query, query_size, idx * word_size);
-        query_pattern(idx, 2) = myers_generate_query_pattern('T', query, query_size, idx * word_size);
-        query_pattern(idx, 3) = myers_generate_query_pattern('G', query, query_size, idx * word_size);
-    }
-    __syncwarp();
-
-    // Use the Ukkonen algorithm for banding.
-    // Take an initial guess for the edit distance: max_distance_estimate
-    // and compute the maximal band of the NW matrix which is required for this distance.
-    // If the computed distance is smaller accept and compute the backtrace/path,
-    // otherwise retry with a larger guess (i.e. and larger band).
-    int32_t max_distance_estimate = max(1, abs(target_size - query_size) + min(target_size, query_size) / initial_distance_guess_factor);
-    device_matrix_view<WordType> pv;
-    device_matrix_view<WordType> mv;
-    device_matrix_view<int32_t> score;
-    int32_t diagonal_begin = -1;
-    int32_t diagonal_end   = -1;
-    int32_t band_width     = 0;
-    while (1)
-    {
-        int32_t p              = min3(target_size, query_size, (max_distance_estimate - abs(target_size - query_size)) / 2);
-        int32_t band_width_new = min(1 + 2 * p + abs(target_size - query_size), query_size);
-        if (band_width_new % word_size == 1 && band_width_new != query_size) // we need at least two bits in the last word
-        {
-            p += 1;
-            band_width_new = min(1 + 2 * p + abs(target_size - query_size), query_size);
-        }
-        if (band_width_new > max_bandwidth)
-        {
-            band_width_new = max_bandwidth;
-            p              = (band_width_new - 1 - abs(target_size - query_size)) / 2;
-        }
-        const int32_t n_words_band = ceiling_divide(band_width_new, word_size);
-        if (static_cast<int64_t>(n_words_band) * static_cast<int64_t>(target_size + 1) > pvi->get_max_elements_per_matrix(alignment_idx))
-        {
-            band_width = -band_width;
-            break;
-        }
-        band_width     = band_width_new;
-        pv             = pvi->get_matrix_view(alignment_idx, n_words_band, target_size + 1);
-        mv             = mvi->get_matrix_view(alignment_idx, n_words_band, target_size + 1);
-        score          = scorei->get_matrix_view(alignment_idx, n_words_band, target_size + 1);
-        diagonal_begin = -1;
-        diagonal_end   = -1;
-        myers_compute_scores_edit_dist_banded(diagonal_begin, diagonal_end, pv, mv, score, query_pattern, target, query, target_size, query_size, band_width, n_words_band, p, alignment_idx);
+        path_start  = __shfl_sync(0xffff'ffffu, path_start, 0);
+        path_length = __shfl_sync(0xffff'ffffu, path_length, 0);
+        for (int32_t i = threadIdx.x; i < path_length; i += warp_size)
+            paths_output[path_start + i] = path[i];
         __syncwarp();
-        assert(n_words_band > 0 || query_size == 0);
-        const int32_t cur_edit_distance = n_words_band > 0 ? score(n_words_band - 1, target_size) : target_size;
-        if (cur_edit_distance <= max_distance_estimate || band_width == query_size)
-        {
-            break;
-        }
-        if (band_width == max_bandwidth)
-        {
-            band_width = -band_width;
-            break;
-        }
-        max_distance_estimate *= 2;
-    }
-    if (threadIdx.x == 0)
-    {
-        int32_t path_length = 0;
-        if (band_width != 0)
-        {
-            int8_t* const path         = paths_base + path_starts[alignment_idx];
-            int32_t* const path_counts = path_counts_base + path_starts[alignment_idx];
-            path_length                = band_width > 0 ? 1 : -1;
-            band_width                 = abs(band_width);
-            path_length *= myers_backtrace_banded(path, path_counts, pv, mv, score, diagonal_begin, diagonal_end, band_width, target_size, query_size);
-        }
-        path_lengths[alignment_idx] = path_length;
+        for (int32_t i = threadIdx.x; i < path_length; i += warp_size)
+            path_counts_output[path_start + i] = path_counts[i];
+        alignment_idx = get_alignment_task(scheduling_index_d, scheduling_atomic_d, n_alignments);
+        __syncwarp();
     }
 }
 
@@ -1092,31 +1138,68 @@ void myers_gpu(int8_t* paths_d, int32_t* path_lengths_d, int32_t max_path_length
     GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 
-void myers_banded_gpu(int8_t* paths_d, int32_t* path_counts_d, int32_t* path_lengths_d, int64_t const* path_starts_d,
+int32_t myers_banded_gpu_get_blocks_per_sm()
+{
+    constexpr int block_size = warp_size;
+    int n_blocks             = 0;
+    GW_CU_CHECK_ERR(cudaOccupancyMaxActiveBlocksPerMultiprocessor(&n_blocks, myers::myers_banded_kernel, block_size, 0));
+    return n_blocks;
+}
+
+void myers_banded_gpu(int8_t* paths_d, int32_t* path_counts_d, int32_t* path_starts_d, uint32_t* path_metadata_d,
                       char const* sequences_d,
                       int64_t const* sequence_starts_d,
                       int32_t const* max_bandwidths_d,
-                      int32_t const* scheduling_index_d,
+                      int32_t* scheduling_index_d,
                       int32_t* scheduling_atomic_int_d,
-                      int32_t n_alignments,
                       batched_device_matrices<myers::WordType>& pv,
                       batched_device_matrices<myers::WordType>& mv,
                       batched_device_matrices<int32_t>& score,
                       batched_device_matrices<myers::WordType>& query_patterns,
+                      int8_t* path_buffer_d,
+                      int32_t* path_counts_buffer_d,
+                      int32_t path_buffer_size,
+                      int32_t n_alignments,
+                      int32_t n_launch_blocks,
+                      int32_t n_large_workspaces,
                       cudaStream_t stream)
 {
     const dim3 threads(warp_size, 1, 1);
-    const dim3 blocks(n_alignments, 1, 1);
+    const dim3 blocks(n_launch_blocks, 1, 1);
 
     // Work-around for missing cuda::atomic_ref in libcu++.
     static_assert(sizeof(int32_t) == sizeof(cuda::atomic<int32_t, cuda::thread_scope_device>), "cuda::atomic<int32_t> needs to have the same size as int32_t.");
     static_assert(alignof(int32_t) == alignof(cuda::atomic<int32_t, cuda::thread_scope_device>), "cuda::atomic<int32_t> needs to have the same alignment as int32_t.");
     cuda::atomic<int32_t, cuda::thread_scope_device>* const scheduling_atomic_d = reinterpret_cast<cuda::atomic<int32_t, cuda::thread_scope_device>*>(scheduling_atomic_int_d);
+    cuda::atomic<int32_t, cuda::thread_scope_device>* const path_start_atomic_d = reinterpret_cast<cuda::atomic<int32_t, cuda::thread_scope_device>*>(path_starts_d + n_alignments);
 
-    myers::init_atomic<<<1, 1, 0, stream>>>(scheduling_atomic_d);
-    myers::myers_banded_kernel<<<blocks, threads, 0, stream>>>(paths_d, path_counts_d, path_lengths_d, path_starts_d,
+    myers::init_atomics<<<1, 1, 0, stream>>>(path_start_atomic_d, scheduling_atomic_d, n_large_workspaces);
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
+    myers::myers_banded_kernel<<<blocks, threads, 0, stream>>>(paths_d, path_counts_d, path_starts_d, path_metadata_d, path_start_atomic_d,
                                                                pv.get_device_interface(), mv.get_device_interface(), score.get_device_interface(), query_patterns.get_device_interface(),
-                                                               sequences_d, sequence_starts_d, max_bandwidths_d, scheduling_index_d, scheduling_atomic_d, n_alignments);
+                                                               path_buffer_d, path_counts_buffer_d,
+                                                               sequences_d, sequence_starts_d, max_bandwidths_d, scheduling_index_d, scheduling_atomic_d, path_buffer_size, n_large_workspaces, n_alignments);
+    GW_CU_CHECK_ERR(cudaPeekAtLastError());
+    cub::DoubleBuffer<int32_t> keys(path_starts_d, path_counts_buffer_d);
+    cub::DoubleBuffer<uint32_t> values(path_metadata_d, reinterpret_cast<uint32_t*>(scheduling_index_d));
+    size_t temp_storage_bytes = 0;
+    char* buffer              = reinterpret_cast<char*>(pv.buffer().data());
+    size_t buffer_size        = sizeof(myers::WordType) * pv.buffer().size();
+    GW_CU_CHECK_ERR(cub::DeviceRadixSort::SortPairs(nullptr, temp_storage_bytes, keys, values, n_alignments, 0, 32, stream));
+    if (temp_storage_bytes > buffer_size)
+    {
+        throw std::runtime_error("Temporary buffer is too small. Please report this bug to the GenomeWorks developers.");
+    }
+    GW_CU_CHECK_ERR(cub::DeviceRadixSort::SortPairs(buffer, temp_storage_bytes, keys, values, n_alignments, 0, 32, stream));
+    if (keys.Current() != path_starts_d)
+    {
+        cudautils::device_copy_n_async(path_counts_buffer_d, n_alignments, path_starts_d, stream); // it is not n_alignments + 1, because path_starts_d[n_al.] should not be sorted
+    }
+    if (values.Current() != path_metadata_d)
+    {
+        cudautils::device_copy_n_async(reinterpret_cast<uint32_t*>(scheduling_index_d), n_alignments, path_metadata_d, stream);
+    }
+    myers::set_minus_one_to_zero<<<(n_alignments + 255) / 256, 256, 0, stream>>>(path_starts_d, n_alignments);
     GW_CU_CHECK_ERR(cudaPeekAtLastError());
 }
 

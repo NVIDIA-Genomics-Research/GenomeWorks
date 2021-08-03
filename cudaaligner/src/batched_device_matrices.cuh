@@ -1,5 +1,5 @@
 /*
-* Copyright 2019-2020 NVIDIA CORPORATION.
+* Copyright 2019-2021 NVIDIA CORPORATION.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -181,6 +181,7 @@ public:
 
     device_interface* get_device_interface()
     {
+        assert(!offsets_host_.empty());
         return dev_.data();
     }
 
@@ -250,6 +251,11 @@ public:
         cudautils::device_copy_n_async(storage_.data() + offsets_host_[id], n_rows * n_cols, m.data(), stream);
         GW_CU_CHECK_ERR(cudaStreamSynchronize(stream));
         return m;
+    }
+
+    device_buffer<T>& buffer()
+    {
+        return storage_;
     }
 
 private:
