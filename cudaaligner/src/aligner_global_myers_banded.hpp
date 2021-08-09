@@ -1,5 +1,5 @@
 /*
-* Copyright 2019-2020 NVIDIA CORPORATION.
+* Copyright 2019-2021 NVIDIA CORPORATION.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -66,6 +66,8 @@ private:
 
     static void reallocate_internal_data(InternalData* data, int64_t max_device_memory, int32_t max_bandwidth, int32_t n_alignments_initial, cudaStream_t stream);
     void reset_data();
+
+    bool fits_device_memory(int64_t matrix_size_large, int64_t matrix_size_small, int32_t query_pattern_size_large, int32_t query_pattern_size_small, int32_t query_length, int32_t target_length) const;
 
     std::unique_ptr<InternalData> data_;
     cudaStream_t stream_;

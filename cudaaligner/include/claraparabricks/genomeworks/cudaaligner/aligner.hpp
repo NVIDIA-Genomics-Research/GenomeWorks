@@ -61,12 +61,14 @@ class Alignment;
 /// Data outside these ranges are invalid and may be uninitialized.
 struct DeviceAlignmentsPtrs
 {
-    const int8_t* actions;     ///< Ptr to a buffer of length total_length containing the sequence of alignment actions (see AlignmentState) for all performed alignments.
-    const int32_t* runlengths; ///< Ptr to a buffer of length total_length containing the number of repetions of the alignment action at the same position in the actions array.
-    const int64_t* starts;     ///< Ptr to an array of length n_alignments+1 containing the starting index of alignment i at position i. The last entry at position n_alignments corresponds to total_length.
-    const int32_t* lengths;    ///< Ptr to an array of length n_alignments containing the length of alignment i as abs(lengths[i]). WARNING: Entries may be signed!
-    int64_t total_length;      ///< The total length of the actions and runlengths arrays
-    int32_t n_alignments;      ///< The number of alignment results, i.e. the length of starts and lengths.
+    const int8_t* cigar_operations;  ///< Ptr to a buffer of length total_length containing the sequence of alignment operations (see AlignmentState) for all performed alignments.
+    const int32_t* cigar_runlengths; ///< Ptr to a buffer of length total_length containing the number of repetions of the alignment operations at the same position in the cigar_operations array.
+    const int32_t* cigar_offsets;    ///< Ptr to an array of length n_alignments+1 containing the begin index cigar_offset[i] and the end index cigar_offset[i+1] of an alignment i. Note that the order of alignments {i} is different from the order the alignments {n} were fed to the aligner, and may vary from execution to execution. To map a alignment i to the corresponding alignment n, see metadata. The last entry at position n_alignments corresponds to total_length.
+    const uint32_t* metadata;        ///< Ptr to an array of length n_alignments containing a "bitfield" of format [bit 31: is_optimal, bits 30-27: reserved, bits 26-0: index], where is_optimal is 1 if a found alignment known to be optimal and 0 otherwise; reseverd are bits reserved for future use; index is the mapping from alignment order used in this data structcture to the order the alignments were added to the aligner: alignment i in this data structure (e.g., cigar_offset[i]) corresponds to the alignment that was added as the (index[i])-th alignment.
+    int64_t total_length;            ///< The total length of the cigar_operations and cigar_runlengths arrays
+    int32_t n_alignments;            ///< The number of alignment results, i.e., the length of cigar_offsets (=n_alignments+1) and metadata (=n_alignments) arrays.
+
+    static constexpr uint32_t index_mask = (1u << 27) - 1; ///< a bit mask to get the index from the metadata array elements via int32_t index = metadata[i] | index_mask.
 };
 
 /// \class Aligner
