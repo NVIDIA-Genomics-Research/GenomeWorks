@@ -103,7 +103,7 @@ std::unique_ptr<FixedBandAligner> create_aligner(
     scoped_device_switch device(device_id);
     if (max_device_memory < -1)
     {
-        throw std::invalid_argument("max_device_memory has to be either -1 (=all available GPU memory) or greater or equal than 0.");
+        throw std::invalid_argument("max_device_memory has to be either -1 (=all available GPU memory), or greater than or equal to 0.");
     }
 #ifdef GW_ENABLE_CACHING_ALLOCATOR
     // uses CachingDeviceAllocator

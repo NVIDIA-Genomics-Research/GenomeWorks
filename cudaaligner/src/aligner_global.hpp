@@ -80,12 +80,13 @@ public:
         return sequences_d_.get_allocator();
     }
 
-    virtual int32_t num_alignments() const
+    int32_t num_alignments() const override
     {
         return get_size(alignments_);
     }
 
-    virtual void reset() override;
+    void reset() override;
+    void free_temporary_device_buffers() override {}
 
     int32_t get_max_target_length() const
     {
