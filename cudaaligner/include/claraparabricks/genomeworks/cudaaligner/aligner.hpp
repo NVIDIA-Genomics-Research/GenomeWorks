@@ -123,6 +123,17 @@ public:
     /// \brief Reset aligner object.
     virtual void reset() = 0;
 
+    /// \brief Frees temporary device buffers that are needed during the alignment.
+    ///
+    /// Frees temporary device buffers that are needed during the alignment, i.e.,
+    /// between the first add_alignment() call until alignment via align_all() is completed.
+    /// Beware to synchronize the stream before calling this function to ensure the
+    /// asynchronous align_all() operation is completed.
+    virtual void free_temporary_device_buffers() = 0;
+
+    /// \brief Returns the number of alignments queued and/or processed in the aligner.
+    virtual int32_t num_alignments() const = 0;
+
     /// \brief Get the assigned CUDA stream
     virtual cudaStream_t get_stream() const = 0;
 
