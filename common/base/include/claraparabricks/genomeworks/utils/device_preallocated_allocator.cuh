@@ -16,14 +16,18 @@
 
 #pragma once
 
+#include <claraparabricks/genomeworks/utils/cudautils.hpp>
+#include <claraparabricks/genomeworks/utils/mathutils.hpp>
+
 #include <algorithm>
 #include <list>
 #include <memory>
 #include <mutex>
 #include <vector>
 
-#include <claraparabricks/genomeworks/utils/cudautils.hpp>
-#include <claraparabricks/genomeworks/utils/mathutils.hpp>
+#ifdef GW_PREALLOCATED_ALLOCATOR_DEBUG
+#include <iostream>
+#endif // GW_PREALLOCATED_ALLOCATOR_DEBUG
 
 namespace claraparabricks
 {
@@ -176,6 +180,16 @@ private:
             return cudaErrorMemoryAllocation;
         }
 
+#ifdef GW_PREALLOCATED_ALLOCATOR_DEBUG
+        std::cerr << "Allocator 0x" << std::hex << reinterpret_cast<size_t>(this) << std::dec << " trying to allocate " << bytes_needed << " bytes. Largest free block: " << get_size_of_largest_free_memory_block() << " of " << buffer_size_ << " bytes.\n";
+        std::cerr << " used blocks:";
+        for (const auto& block : used_blocks_)
+        {
+            std::cerr << "[" << block.begin << "+" << block.size << "]";
+        }
+        std::cerr << std::endl;
+#endif // GW_PREALLOCATED_ALLOCATOR_DEBUG
+
         // ** look for first free block that can fit requested size
         auto block_to_get_memory_from_iter = std::find_if(std::begin(free_blocks_),
                                                           std::end(free_blocks_),
@@ -237,6 +251,9 @@ private:
         assert(static_cast<char*>(pointer) >= buffer_ptr_.get());
         const size_t block_start = static_cast<char*>(pointer) - buffer_ptr_.get();
         assert(block_start < buffer_size_);
+#ifdef GW_PREALLOCATED_ALLOCATOR_DEBUG
+        std::cerr << "Allocator 0x" << std::hex << reinterpret_cast<size_t>(this) << std::dec << " freeing block " << block_start << "." << std::endl;
+#endif // GW_PREALLOCATED_ALLOCATOR_DEBUG
 
         // ** look for pointer's memory block
         auto block_to_be_freed_iter = std::find_if(std::begin(used_blocks_),
