@@ -18,6 +18,7 @@
 
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
 #include <algorithm>
+#include <limits>
 
 namespace claraparabricks
 {

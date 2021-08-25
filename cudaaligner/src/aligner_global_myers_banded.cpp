@@ -25,6 +25,8 @@
 #include <claraparabricks/genomeworks/utils/mathutils.hpp>
 #include <claraparabricks/genomeworks/utils/pinned_host_vector.hpp>
 
+#include <limits>
+
 namespace claraparabricks
 {
 
