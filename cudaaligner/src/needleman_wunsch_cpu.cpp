@@ -22,6 +22,7 @@
 #include <tuple>
 #include <cassert>
 #include <algorithm>
+#include <limits>
 
 namespace claraparabricks
 {

@@ -17,6 +17,7 @@
 #include "matcher_gpu.cuh"
 
 #include <cassert>
+#include <limits>
 #include <numeric>
 
 #pragma GCC diagnostic push
