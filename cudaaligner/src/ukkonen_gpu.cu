@@ -17,7 +17,7 @@
 #include "ukkonen_gpu.cuh"
 #include "batched_device_matrices.cuh"
 #include <claraparabricks/genomeworks/cudaaligner/cudaaligner.hpp>
-#include <claraparabricks/genomeworks/utils/limits.cuh>
+#include <cuda/std/limits>
 
 #include <limits>
 #include <cstdint>
@@ -77,7 +77,7 @@ __launch_bounds__(GW_UKKONEN_MAX_THREADS_PER_BLOCK) // Workaround for a register
     if (id >= n_alignments)
         return;
 
-    GW_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
+    GW_CONSTEXPR nw_score_t max = cuda::std::numeric_limits<nw_score_t>::max() - 1;
 
     int32_t m        = sequence_lengths_d[2 * id] + 1;
     int32_t n        = sequence_lengths_d[2 * id + 1] + 1;
@@ -153,7 +153,7 @@ __launch_bounds__(GW_UKKONEN_MAX_THREADS_PER_BLOCK) // Workaround for a register
 
 __device__ void ukkonen_compute_score_matrix_odd(device_matrix_view<nw_score_t>& scores, int32_t kmax, int32_t k, int32_t m, int32_t n, char const* query, char const* target, int32_t max_target_query_length, int32_t p, int32_t l)
 {
-    GW_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
+    GW_CONSTEXPR nw_score_t max = cuda::std::numeric_limits<nw_score_t>::max() - 1;
     while (k < kmax)
     {
         int32_t const lmin = abs(2 * k + 1 - p);
@@ -173,7 +173,7 @@ __device__ void ukkonen_compute_score_matrix_odd(device_matrix_view<nw_score_t>&
 
 __device__ void ukkonen_compute_score_matrix_even(device_matrix_view<nw_score_t>& scores, int32_t kmax, int32_t k, int32_t m, int32_t n, char const* query, char const* target, int32_t max_target_query_length, int32_t p, int32_t l)
 {
-    GW_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
+    GW_CONSTEXPR nw_score_t max = cuda::std::numeric_limits<nw_score_t>::max() - 1;
     while (k < kmax)
     {
         int32_t const lmin = abs(2 * k - p);
@@ -193,7 +193,7 @@ __device__ void ukkonen_compute_score_matrix_even(device_matrix_view<nw_score_t>
 
 __device__ void ukkonen_init_score_matrix(device_matrix_view<nw_score_t>& scores, int32_t k, int32_t p)
 {
-    GW_CONSTEXPR nw_score_t max = numeric_limits<nw_score_t>::max() - 1;
+    GW_CONSTEXPR nw_score_t max = cuda::std::numeric_limits<nw_score_t>::max() - 1;
     while (k < scores.num_rows())
     {
         for (int32_t l = 0; l < scores.num_cols(); ++l)

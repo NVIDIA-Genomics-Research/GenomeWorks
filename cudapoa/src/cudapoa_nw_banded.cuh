@@ -19,9 +19,9 @@
 #include "cudapoa_structs.cuh"
 
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
-#include <claraparabricks/genomeworks/utils/limits.cuh>
+#include <cuda/std/limits>
 
-#include <stdio.h>
+#include <cstdio>
 
 namespace claraparabricks
 {
@@ -199,7 +199,7 @@ __device__ __forceinline__
                           int32_t match_score,
                           int32_t rerun)
 {
-    const ScoreT min_score_value = numeric_limits<ScoreT>::min() / 2;
+    constexpr ScoreT min_score_value = cuda::std::numeric_limits<ScoreT>::min() / 2;
 
     int32_t lane_idx = threadIdx.x % WARP_SIZE;
 

@@ -20,7 +20,7 @@
 #include <claraparabricks/genomeworks/cudaaligner/aligner.hpp>
 #include <claraparabricks/genomeworks/utils/cudautils.hpp>
 #include <claraparabricks/genomeworks/utils/mathutils.hpp>
-#include <claraparabricks/genomeworks/utils/limits.cuh>
+#include <cuda/std/limits>
 #include <cstring>
 
 namespace claraparabricks
@@ -455,7 +455,7 @@ __device__ const char* hirschberg_myers_compute_target_mid_warp(
 
     const int32_t target_size = (target_end - target_begin);
     int32_t midpoint          = 0;
-    nw_score_t cur_min        = numeric_limits<nw_score_t>::max();
+    nw_score_t cur_min        = cuda::std::numeric_limits<nw_score_t>::max();
     for (int32_t t = threadIdx.x; t <= target_size; t += warp_size)
     {
         nw_score_t sum = score(t, 0) + score(target_size - t, 1);
