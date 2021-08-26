@@ -1,0 +1,4 @@
+test_case_1;AAAA-;xx|x ;TTATG;4M1I;2X1=1X1I;true;mismatch/mismatch/match/mismatch/insertion/
+test_case_2;CGATAATG; x||||  ;-CATAA--;1D5M2D;1D1X4=2D;true;deletion/mismatch/match/match/match/match/deletion/deletion/
+test_case_3;--GT-TAG--;  || |||  ;AAGTCTAGAA;2I2M1I3M2I;2I2=1I3=2I;true;insertion/insertion/match/match/insertion/match/match/match/insertion/insertion/
+test_case_4;G-TTACA;| || ||;GATT-CA;1M1I2M1D2M;1=1I2=1D2=;false;match/insertion/match/match/deletion/match/match/

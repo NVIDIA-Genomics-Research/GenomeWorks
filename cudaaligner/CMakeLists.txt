@@ -18,6 +18,9 @@
 
 set(MODULE_NAME cudaaligner)
 
+# Data subdirectory
+add_subdirectory(data)
+
 # Project specific NVCC flags
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14 -arch=compute_60")
 message(STATUS "nvcc flags for ${MODULE_NAME}: ${CUDA_NVCC_FLAGS}")
@@ -45,7 +48,8 @@ target_include_directories(${MODULE_NAME}_internal INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(${MODULE_NAME} gwbase cub libcudacxx)
+
+target_link_libraries(${MODULE_NAME} gwbase cub gwio libcudacxx)
 
 if (gw_optimize_for_native_cpu)
     target_compile_options(${MODULE_NAME} PRIVATE -march=native)

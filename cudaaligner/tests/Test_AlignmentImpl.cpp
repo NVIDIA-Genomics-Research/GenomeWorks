@@ -15,11 +15,14 @@
 */
 
 #include "../src/alignment_impl.hpp"
+#include "cudaaligner_file_location.hpp"
 
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/io/fasta_parser.hpp>
 
 #include "gtest/gtest.h"
 #include <memory>
+#include <fstream>
 
 namespace claraparabricks
 {
@@ -63,81 +66,61 @@ typedef struct AlignmentTestData
     std::string cigar_extended;
 } AlignmentTestData;
 
+AlignmentState get_alignment_state(const std::string s)
+{
+    if (s == "match")
+        return AlignmentState::match;
+    if (s == "mismatch")
+        return AlignmentState::mismatch;
+    if (s == "insertion")
+        return AlignmentState::insertion;
+    if (s == "deletion")
+        return AlignmentState::deletion;
+    assert(false);
+    return AlignmentState(0);
+}
+
 std::vector<AlignmentTestData> create_alignment_test_cases()
 {
     std::vector<AlignmentTestData> test_cases;
     AlignmentTestData data;
 
-    // Test case 1
-    data.query     = "AAAA";
-    data.target    = "TTATG";
-    data.alignment = {
-        AlignmentState::mismatch,
-        AlignmentState::mismatch,
-        AlignmentState::match,
-        AlignmentState::mismatch,
-        AlignmentState::insertion};
-    data.is_optimal          = true;
-    data.formatted_alignment = FormattedAlignment{"AAAA-", "xx|x ", "TTATG"};
-    data.cigar_basic         = "4M1I";
-    data.cigar_extended      = "2X1=1X1I";
-    test_cases.push_back(data);
+    std::unique_ptr<claraparabricks::genomeworks::io::FastaParser> target_parser = claraparabricks::genomeworks::io::create_kseq_fasta_parser(std::string(CUDAALIGNER_BENCHMARK_DATA_DIR) + "/target_AlignmentImpl.fasta", 0, false);
+    std::unique_ptr<claraparabricks::genomeworks::io::FastaParser> query_parser  = claraparabricks::genomeworks::io::create_kseq_fasta_parser(std::string(CUDAALIGNER_BENCHMARK_DATA_DIR) + "/query_AlignmentImpl.fasta", 0, false);
+    std::ifstream result_file(std::string(CUDAALIGNER_BENCHMARK_DATA_DIR) + "/result_AlignmentImpl.txt");
+    std::string result_line;
+    read_id_t read_id = 0;
 
-    // Test case 2
-    data.query     = "CGATAATG";
-    data.target    = "CATAA";
-    data.alignment = {
-        AlignmentState::deletion,
-        AlignmentState::mismatch,
-        AlignmentState::match,
-        AlignmentState::match,
-        AlignmentState::match,
-        AlignmentState::match,
-        AlignmentState::deletion,
-        AlignmentState::deletion};
-    data.is_optimal          = true;
-    data.formatted_alignment = FormattedAlignment{"CGATAATG", " x||||  ", "-CATAA--"};
-    data.cigar_basic         = "1D5M2D";
-    data.cigar_extended      = "1D1X4=2D";
-    test_cases.push_back(data);
+    while (getline(result_file, result_line))
+    {
+        data = {};
+        std::stringstream linestream(result_line);
+        std::string test_case, formatted_field_1, formatted_field_2, formatted_field_3, optimal, alignment_field, alignment_state;
+        while (getline(linestream, test_case, ';'))
+        {
+            assert(query_parser->get_sequence_by_id(read_id).name == test_case);
+            assert(target_parser->get_sequence_by_id(read_id).name == test_case);
+            data.query  = query_parser->get_sequence_by_id(read_id).seq;
+            data.target = target_parser->get_sequence_by_id(read_id).seq;
+            getline(linestream, formatted_field_1, ';');
+            getline(linestream, formatted_field_2, ';');
+            getline(linestream, formatted_field_3, ';');
+            getline(linestream, data.cigar_basic, ';');
+            getline(linestream, data.cigar_extended, ';');
+            getline(linestream, optimal, ';');
+            getline(linestream, alignment_field, ';');
 
-    // Test case 3
-    data.query     = "GTTAG";
-    data.target    = "AAGTCTAGAA";
-    data.alignment = {
-        AlignmentState::insertion,
-        AlignmentState::insertion,
-        AlignmentState::match,
-        AlignmentState::match,
-        AlignmentState::insertion,
-        AlignmentState::match,
-        AlignmentState::match,
-        AlignmentState::match,
-        AlignmentState::insertion,
-        AlignmentState::insertion,
-    };
-    data.is_optimal          = true;
-    data.formatted_alignment = FormattedAlignment{"--GT-TAG--", "  || |||  ", "AAGTCTAGAA"};
-    data.cigar_basic         = "2I2M1I3M2I";
-    data.cigar_extended      = "2I2=1I3=2I";
-    test_cases.push_back(data);
-
-    // Test case 4
-    data.query     = "GTTACA";
-    data.target    = "GATTCA";
-    data.alignment = {
-        AlignmentState::match,
-        AlignmentState::insertion,
-        AlignmentState::match,
-        AlignmentState::match,
-        AlignmentState::deletion,
-        AlignmentState::match,
-        AlignmentState::match};
-    data.is_optimal          = false; // this example is optimal, but is_optimal = false does only mean it is an upper bound
-    data.formatted_alignment = FormattedAlignment{"G-TTACA", "| || ||", "GATT-CA"};
-    data.cigar_basic         = "1M1I2M1D2M";
-    data.cigar_extended      = "1=1I2=1D2=";
-    test_cases.push_back(data);
+            data.formatted_alignment = FormattedAlignment{formatted_field_1, formatted_field_2, formatted_field_3};
+            data.is_optimal          = ((optimal == "true") ? true : false);
+            std::istringstream alignstream(alignment_field);
+            while (getline(alignstream, alignment_field, '/'))
+            {
+                data.alignment.push_back(get_alignment_state(alignment_field));
+            }
+        }
+        read_id++;
+        test_cases.push_back(data);
+    }
 
     return test_cases;
 }

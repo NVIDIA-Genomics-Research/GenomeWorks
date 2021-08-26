@@ -15,12 +15,15 @@
 */
 
 #include "../src/aligner_global_myers_banded.hpp"
+#include "cudaaligner_file_location.hpp"
 #include <claraparabricks/genomeworks/cudaaligner/alignment.hpp>
 #include <claraparabricks/genomeworks/utils/signed_integer_utils.hpp>
+#include <claraparabricks/genomeworks/io/fasta_parser.hpp>
 
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <limits>
+#include <fstream>
 
 namespace
 {
@@ -37,7 +40,23 @@ struct TestCase
 std::vector<TestCase> create_band_test_cases()
 {
     std::vector<TestCase> data;
-    data.push_back({"AGGGCGAATATCGCCTCCCGCATTAAGCTGTACCTTCCAGCCCCGCCGGTAATTCCAGCCGGTTGAAGCCACGTCTGCCACGGCACAATGTTTTCGCTTTGCCCGGTGACGGATTTAATCCACCACAG", "AGGGCGAATATCGCCTCCGCATTAAACTGTACTTCCCAGCCCCGCCAGTATTCCAGCGGGTTGAAGCCGCGTCTGCCACAGCGCAATGTTTTCTTTGCCCACGGTGACCGGTTTAGTCACTACAGTTGC", 23});
+
+    std::unique_ptr<claraparabricks::genomeworks::io::FastaParser> target_parser = claraparabricks::genomeworks::io::create_kseq_fasta_parser(std::string(CUDAALIGNER_BENCHMARK_DATA_DIR) + "/target_AlignerGlobal.fasta", 0, false);
+    std::unique_ptr<claraparabricks::genomeworks::io::FastaParser> query_parser  = claraparabricks::genomeworks::io::create_kseq_fasta_parser(std::string(CUDAALIGNER_BENCHMARK_DATA_DIR) + "/query_AlignerGlobal.fasta", 0, false);
+
+    std::ifstream edit_dist_file(std::string(CUDAALIGNER_BENCHMARK_DATA_DIR) + "/result_ApproximateBandedMyers.txt");
+    std::string test_case;
+    int32_t edit_distance;
+
+    assert(target_parser->get_num_seqences() == query_parser->get_num_seqences());
+    claraparabricks::genomeworks::read_id_t read = 0;
+    while (edit_dist_file >> test_case >> edit_distance)
+    {
+        assert(target_parser->get_sequence_by_id(read).name == test_case);
+        assert(query_parser->get_sequence_by_id(read).name == test_case);
+        data.push_back({query_parser->get_sequence_by_id(read).seq, target_parser->get_sequence_by_id(read).seq, edit_distance});
+    }
+
     return data;
 }
 

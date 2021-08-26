@@ -30,6 +30,9 @@ set(SOURCES
     Test_NeedlemanWunschImplementation.cpp
     )
 
+get_property(cudaaligner_data_include_dir GLOBAL PROPERTY cudaaligner_data_include_dir)
+include_directories(${cudaaligner_data_include_dir})
+
 set(LIBS
     cudaaligner
     gwbase)
