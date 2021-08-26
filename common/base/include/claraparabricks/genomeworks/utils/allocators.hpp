@@ -319,44 +319,6 @@ private:
     cudaStream_t default_stream_;
 };
 
-#ifdef GW_ENABLE_CACHING_ALLOCATOR
-using DefaultDeviceAllocator = CachingDeviceAllocator<char, details::DevicePreallocatedAllocator>;
-#else
-using DefaultDeviceAllocator = CudaMallocAllocator<char>;
-#endif
-
-/// Gets the size of the largest free memory block in the allocator
-///
-/// \return returns the size in bytes
-inline int64_t get_size_of_largest_free_memory_block(DefaultDeviceAllocator const& allocator)
-{
-    return allocator.get_size_of_largest_free_memory_block();
-}
-
-/// Constructs a DefaultDeviceAllocator
-///
-/// This function provides a way to construct a valid DefaultDeviceAllocator
-/// for all possible DefaultDeviceAllocators.
-/// Use this function to obtain a DefaultDeviceAllocator object.
-/// This function is needed, since construction of CachingDeviceAllocator
-/// requires a max_caching_size argument to obtain a valid allocator.
-/// Default constuction of CachingDeviceAllocator yields an dummy object
-/// which cannot allocate memory.
-/// \param max_cached_bytes max bytes used by memory resource used by CachingDeviceAllocator (default: 2GiB, unused for CudaMallocAllocator)
-/// \param default_stream if a call to allocate() does not specify any streams this stream will be used instead (unused for CudaMallocAllocator)
-inline DefaultDeviceAllocator create_default_device_allocator(std::size_t max_caching_size = 2ull * 1024 * 1024 * 1024,
-                                                              cudaStream_t default_stream  = 0)
-{
-#ifdef GW_ENABLE_CACHING_ALLOCATOR
-    return DefaultDeviceAllocator(max_caching_size,
-                                  default_stream);
-#else
-    static_cast<void>(max_caching_size);
-    static_cast<void>(default_stream);
-    return DefaultDeviceAllocator();
-#endif
-}
-
 } // namespace genomeworks
 
 } // namespace claraparabricks

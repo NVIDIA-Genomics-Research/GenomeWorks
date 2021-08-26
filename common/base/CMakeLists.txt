@@ -21,6 +21,8 @@ set(MODULE_NAME gwbase)
 set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14")
 message(STATUS "nvcc flags for ${MODULE_NAME}: ${CUDA_NVCC_FLAGS}")
 
+configure_file(include/claraparabricks/genomeworks/utils/allocator.in include/claraparabricks/genomeworks/utils/allocator.hpp)
+
 get_property(gw_library_type GLOBAL PROPERTY gw_library_type)
 add_library(${MODULE_NAME} ${gw_library_type}
         src/cudautils.cpp
@@ -40,7 +42,9 @@ if (gw_device_synchronize_kernels)
 endif()
 
 if(gw_enable_caching_allocator)
-    target_compile_definitions(${MODULE_NAME} PUBLIC GW_ENABLE_CACHING_ALLOCATOR)
+    set(GW_USE_DEVICE_ALLOCATOR_FILE "use_caching_device_allocator.hpp")
+else()
+    set(GW_USE_DEVICE_ALLOCATOR_FILE "use_cuda_malloc_allocator.hpp")
 endif()
 
 target_include_directories(${MODULE_NAME}
